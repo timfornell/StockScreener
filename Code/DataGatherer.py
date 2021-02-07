@@ -103,7 +103,7 @@ def get_twitter_momentum_score() -> pd.DataFrame:
     twitter_momentum.reset_index(drop=True,inplace=True)
     return twitter_momentum
 
-def stock_screener():
+def data_gatherer():
     # movers = get_most_active_with_positive_change()
     # company_info = get_monthly_sentiment_data_from_sentdex()
     # twitter_data_bull_bear = get_bull_bear_data_from_twitter()
@@ -121,4 +121,4 @@ def stock_screener():
     top_stocks.drop(['Market Cap', 'Avg Vol (3 month)'], axis=1, inplace=True)
     print(top_stocks)
 
-stock_screener()
+data_gatherer()
