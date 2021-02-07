@@ -109,10 +109,10 @@ def stock_screener():
     # twitter_data_bull_bear = get_bull_bear_data_from_twitter()
     # twitter_momentum = get_twitter_momentum_score()
 
-    movers = pd.read_pickle("movers.pkl")
-    company_info = pd.read_pickle("company_info.pkl")
-    twitter_data_bull_bear = pd.read_pickle("twitter.pkl")
-    twitter_momentum = pd.read_pickle("momentum.pkl")
+    movers = pd.read_pickle("Database/movers.pkl")
+    company_info = pd.read_pickle("Database/company_info.pkl")
+    twitter_data_bull_bear = pd.read_pickle("Database/twitter.pkl")
+    twitter_momentum = pd.read_pickle("Database/momentum.pkl")
 
     # Merge with "how='outer'" to not remove any symbols
     top_stocks = movers.merge(company_info, on='Symbol', how='outer')
