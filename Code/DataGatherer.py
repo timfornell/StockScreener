@@ -119,6 +119,7 @@ def data_gatherer():
     top_stocks = top_stocks.merge(twitter_data_bull_bear, on='Symbol', how='outer')
     top_stocks = top_stocks.merge(twitter_momentum, on='Symbol', how='outer')
     top_stocks.drop(['Market Cap', 'Avg Vol (3 month)'], axis=1, inplace=True)
-    print(top_stocks)
+    
+    return top_stocks
 
 data_gatherer()
