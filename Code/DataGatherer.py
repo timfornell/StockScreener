@@ -103,7 +103,7 @@ def get_twitter_momentum_score() -> pd.DataFrame:
     twitter_momentum.reset_index(drop=True,inplace=True)
     return twitter_momentum
 
-def data_gatherer():
+def data_gatherer() -> pd.DataFrame:
     # movers = get_most_active_with_positive_change()
     # company_info = get_monthly_sentiment_data_from_sentdex()
     # twitter_data_bull_bear = get_bull_bear_data_from_twitter()

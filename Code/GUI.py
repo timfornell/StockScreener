@@ -7,6 +7,9 @@ from tkinter import ttk
 
 class GUI(Frame):
     def __init__(self, root):
+        self.id = 0
+        self.num_stocks = 10
+        self.ascending = False
         self.root = root
         self.stocklist = data_gatherer()
         self.working_stocklist = self.stocklist.head()
@@ -52,25 +55,48 @@ class GUI(Frame):
         self.tree.grid(row=len(self.stocklist.index), columnspan=len(list(self.stocklist.columns)), sticky=NSEW)
         self.treeview = self.tree
 
+        self.update_stocklist(initialize=True)
 
-    def set_sort_variable(self, selection):
+
+    def set_sort_variable(self, selection) -> None:
         self.sort_variable_string = selection
 
 
-    def update_stocklist(self):
-        print("Limit stocklist to {}.".format(self.number_of_stocks_entry.get()))
+    def update_stocklist(self, initialize=False, sorting=False) -> None:
+        if not initialize and not sorting:
+            self.num_stocks = int(self.number_of_stocks_entry.get())
+                
+        print("Limit stocklist to {}.".format(self.num_stocks))
+        
+        if not sorting:
+            self.working_stocklist = self.stocklist.head(self.num_stocks)
+            self.clear_tree()
+        
+        for i, stock in enumerate(self.working_stocklist.iterrows()):
+            self.insert_data(i, stock)
 
 
     def sort_stocklist(self) -> None:
         if self.sort_variable_string in self.working_stocklist.columns:
-            print("Sorting stocklist based in {}.".format(self.sort_variable_string))
+            print("Sorting stocklist based on '{}'.".format(self.sort_variable_string))
             self.working_stocklist = self.working_stocklist.sort_values(by=[self.sort_variable_string],
                                                                         ascending=self.ascending)
+            self.clear_tree()
+
+            # Draw new sorted stocklist
+            self.update_stocklist(sorting=True)
 
 
-    def insert_data(self):
-        # https://www.askpython.com/python-modules/tkinter/tkinter-treeview-widget
-        pass
+    def insert_data(self, id, stock) -> None:
+        # For some reason 'text=' corresponds to the first column in the tree
+        self.treeview.insert("", "end", iid=id, text=stock[1][0], values=tuple(stock[1][1::]))
+
+    
+    def clear_tree(self) -> None:
+        # Clear current tree
+        for row in self.treeview.get_children():
+            self.treeview.delete(row)
+
 
     # def build_table(self) -> None:
     #     tree.insert(parent='', index='end', iid=0, text="Label", values=list(stocklist.columns))
