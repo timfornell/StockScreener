@@ -21,39 +21,57 @@ class GUI(Frame):
         self.root.title("Stock Screener")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        self.root.config(background="black")
+        self.root.config(background="white")
 
         # Configure private variables
         self.sort_options = list(self.stocklist.columns)
         self.sort_variable_string = "Volume"
         self.sort_direction = False # False is descending and True is ascending
-        self.sort_var = StringVar(self.root)
-
+        
         # Define the different GUI widgets
-        self.sort_label = Label(self.root, text="Sorting key:")
-        self.sort_key = OptionMenu(self.root, self.sort_var, *self.sort_options, command=self.set_sort_variable)
-        self.submit_sorting_option = Button(self.root, text="Apply sorting", command=self.sort_stocklist)
-        self.sort_label.grid(row=0, column=0, sticky=W)
-        self.sort_key.grid(row=0, column=1, sticky=W)
-        self.submit_sorting_option.grid(row=0, column=2, sticky=W)
+        self.options_frame = Frame(self.root)
+        self.options_frame.pack(side=TOP)
 
-        self.number_of_stocks_label = Label(self.root, text="Number of stocks to show:")
-        self.number_of_stocks_entry = Entry(self.root)
-        self.number_of_stocks_entry.grid(row=1, column=0, sticky=W)
-        self.submit_number_of_stocks = Button(self.root, text="Apply",
+        # Sort options
+        self.sort_frame = Frame(self.options_frame)
+        self.sort_frame.pack(side=TOP)
+        self.sort_var = StringVar(self.sort_frame)
+        self.sort_label = Label(self.sort_frame, text="Sorting key:")
+        self.sort_key = OptionMenu(self.sort_frame, self.sort_var, *self.sort_options, command=self.set_sort_variable)
+        self.submit_sorting_option = Button(self.sort_frame, text="Apply sorting", command=self.sort_stocklist)
+        self.sort_label.pack(side=TOP)
+        self.sort_key.pack(side=LEFT)
+        self.submit_sorting_option.pack(side=RIGHT)
+
+        # Number of stocks to display
+        self.num_stocks_frame = Frame(self.options_frame)
+        self.num_stocks_frame.pack(side=BOTTOM)
+        self.number_of_stocks_label = Label(self.num_stocks_frame, text="Number of stocks to show:")
+        self.number_of_stocks_entry = Entry(self.num_stocks_frame)
+        self.number_of_stocks_entry.pack(side=LEFT)
+        self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply",
                                               command=self.update_stocklist)
-        self.number_of_stocks_label.grid(row=1, column=0, sticky=W)
-        self.number_of_stocks_entry.grid(row=1, column=1, sticky=W)
-        self.submit_number_of_stocks.grid(row=1, column=2, sticky=W)
+        self.number_of_stocks_label.pack(side=TOP)
+        self.number_of_stocks_entry.pack(side=LEFT)
+        self.submit_number_of_stocks.pack(side=RIGHT)
 
         # Setup treeview
-        self.tree = ttk.Treeview(self.root, columns=tuple(self.stocklist.columns))
+        self.tree_frame = Frame(self.root)
+        self.tree_frame.pack(side=BOTTOM)
+        self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.stocklist.columns), selectmode='browse')
+        self.tree.pack(side=LEFT, fill="x")
+    
         for i, col in enumerate(self.stocklist.columns):
-            self.tree.heading("#{}".format(i), text=col)
-            self.tree.column("#{}".format(i), stretch=YES)
+            self.tree.heading("{}".format(i), text=col)
+            self.tree.column("{}".format(i), stretch=YES)
 
-        self.tree.grid(row=len(self.stocklist.index), columnspan=len(list(self.stocklist.columns)), sticky=NSEW)
+        self.tree["show"] = "headings"
         self.treeview = self.tree
+
+        self.vert_scrollbar = Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        self.vert_scrollbar.pack(side=RIGHT, fill="y")
+
+        self.tree.configure(yscrollcommand=self.vert_scrollbar.set)
 
         self.update_stocklist(initialize=True)
 
