@@ -98,58 +98,5 @@ class GUI(Frame):
             self.treeview.delete(row)
 
 
-    # def build_table(self) -> None:
-    #     tree.insert(parent='', index='end', iid=0, text="Label", values=list(stocklist.columns))
-
-        # rows = []
-        # cols = []
-        
-        # for i, label in enumerate(stocklist.columns):
-        #     entry = Entry(relief=GROOVE)
-        #     entry.grid(row=0, column=i, sticky=NSEW)
-        #     entry.insert(END, "{}".format(label))
-        #     cols.append(entry)
-        
-        # for j, stock in enumerate(stocklist.iterrows()):
-        #     cols = []
-            
-        #     # stock[1] contains all data of interest
-        #     for i, col in enumerate(stock[1]):
-        #         entry = Entry(relief=GROOVE)
-        #         # Row = j + 1 to take into account the headlines
-        #         entry.grid(row=j + 1, column=i, sticky=NSEW)
-        #         entry.insert(END, '{}'.format(col))
-        #         cols.append(entry)
-
-        #     rows.append(cols)
-
-
-# def main():
-#     stocks = data_gatherer()
-#     sorted_stocks = sort_stocklist(stocks, "Volume", False)
-#     sorted_stocks_head = sorted_stocks.head()
-
-#     root = Tk()
-    
-#     # Sorting variable
-#     sort_var = StringVar(root)
-#     sort_var.set("Volume")
-
-#     sort_options = [col for col in sorted_stocks.columns]
-#     options = OptionMenu(root, sort_var, *sort_options)
-#     options.pack()
-
-#     button = Button(root, text="OK")
-#     button.pack()
-
-#     table = Frame(root)
-#     table.pack(side=BOTTOM)
-
-#     tree = ttk.Treeview(root, columns=tuple(sort_options))
-
-#     build_table(tree, sorted_stocks_head)
-#     mainloop()
-
-
 app = GUI(Tk())
 app.root.mainloop()
