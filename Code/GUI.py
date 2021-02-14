@@ -9,7 +9,6 @@ class GUI(Frame):
     def __init__(self, root):
         self.id = 0
         self.num_stocks = 10
-        self.ascending = False
         self.root = root
         self.stocklist = data_gatherer()
         self.working_stocklist = self.stocklist.head()
@@ -35,13 +34,22 @@ class GUI(Frame):
         # Sort options
         self.sort_frame = Frame(self.options_frame)
         self.sort_frame.pack(side=LEFT)
-        self.sort_var = StringVar(self.sort_frame)
-        self.sort_label = Label(self.sort_frame, text="Sorting key:")
-        self.sort_key = OptionMenu(self.sort_frame, self.sort_var, *self.sort_options, command=self.set_sort_variable)
-        self.submit_sorting_option = Button(self.sort_frame, text="Apply sorting", command=self.sort_stocklist)
-        self.sort_label.pack(side=TOP)
-        self.sort_key.pack(side=LEFT)
+        
+        self.sort_key_frame = Frame(self.sort_frame)
+        self.sort_key_frame.pack(side=TOP)
+        self.sort_var = StringVar(self.sort_key_frame, value=self.sort_variable_string)
+        self.sort_label = Label(self.sort_key_frame, text="Sorting key:")
+        self.sort_key = OptionMenu(self.sort_key_frame, self.sort_var, *self.sort_options, command=self.set_sort_variable)
+        self.sort_label.pack(side=LEFT)
+        self.sort_key.pack(side=RIGHT)
+
+        self.sort_key_buttons = Frame(self.sort_frame)
+        self.sort_key_buttons.pack(side=BOTTOM)
+        self.submit_sorting_option = Button(self.sort_key_buttons, text="Apply sorting", command=self.sort_stocklist)
+        self.sorting_direction_button = Button(self.sort_key_buttons, text="Direction: {}".format(self.get_sort_direction()),
+                                               command=self.change_sort_direction)
         self.submit_sorting_option.pack(side=RIGHT)
+        self.sorting_direction_button.pack(side=LEFT)
 
         # Number of stocks to display
         self.num_stocks_frame = Frame(self.options_frame)
@@ -86,8 +94,8 @@ class GUI(Frame):
         if region == "heading":
             column = self.tree.identify_column(event.x)
             heading = self.tree.heading(column)
-            self.sort_variable_string = heading["text"]
-            self.sort_var.set(heading["text"])
+            self.set_sort_variable(heading["text"], mouse_click=True)
+            self.change_sort_direction(mouse_click=True)
             self.sort_stocklist()
 
 
@@ -96,10 +104,30 @@ class GUI(Frame):
         if focused_widget is self.number_of_stocks_entry:
             self.update_stocklist()
 
+    
+    def get_sort_direction(self):
+        return "Ascending" if self.sort_direction else "Descending"
 
-    def set_sort_variable(self, selection) -> None:
-        self.sort_variable_string = selection
+    
+    def switch_sort_direction(self):
+        self.sort_direction = not self.sort_direction
+        self.sorting_direction_button.configure(text="Direction: {}".format(self.get_sort_direction()))
 
+
+    def change_sort_direction(self, mouse_click=False):
+        self.switch_sort_direction()
+
+        if not mouse_click:
+            self.sort_stocklist()
+
+
+    def set_sort_variable(self, selection, mouse_click=False) -> None:
+        if selection != self.sort_variable_string:
+            self.sort_variable_string = selection
+
+            if mouse_click:
+                self.sort_var.set(selection)
+            
 
     def update_stocklist(self, initialize=False, sorting=False) -> None:
         if not initialize and not sorting:
@@ -126,7 +154,7 @@ class GUI(Frame):
         if self.sort_variable_string in self.working_stocklist.columns:
             print("Sorting stocklist based on '{}'.".format(self.sort_variable_string))
             self.working_stocklist = self.working_stocklist.sort_values(by=[self.sort_variable_string],
-                                                                        ascending=self.ascending)
+                                                                        ascending=self.sort_direction)
             self.clear_tree()
 
             # Draw new sorted stocklist
