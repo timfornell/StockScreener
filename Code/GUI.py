@@ -83,11 +83,12 @@ class GUI(Frame):
     
     def mouse_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
-        column = self.tree.identify_column(event.x)
-        heading = self.tree.heading(column)
-        self.sort_variable_string = heading["text"]
-        self.sort_var.set(heading["text"])
-        self.sort_stocklist()
+        if region == "heading":
+            column = self.tree.identify_column(event.x)
+            heading = self.tree.heading(column)
+            self.sort_variable_string = heading["text"]
+            self.sort_var.set(heading["text"])
+            self.sort_stocklist()
 
 
     def enter_key_callback(self, event):
@@ -102,11 +103,18 @@ class GUI(Frame):
 
     def update_stocklist(self, initialize=False, sorting=False) -> None:
         if not initialize and not sorting:
-            self.num_stocks = int(self.number_of_stocks_entry.get())
-                
-        print("Limit stocklist to {}.".format(self.num_stocks))
-        
+            try:
+                new_value = self.number_of_stocks_entry.get()
+                old_value = self.num_stocks
+                self.num_stocks = int(new_value)
+
+                if old_value == self.num_stocks:
+                    return
+            except:
+                print("Could not change to new value: {}.".format(new_value))
+                        
         if not sorting:
+            print("Limit stocklist to {}.".format(self.num_stocks))
             self.working_stocklist = self.stocklist.head(self.num_stocks)
             self.clear_tree()
         
