@@ -138,7 +138,10 @@ class GUI(Frame):
             try:
                 new_value = self.number_of_stocks_entry.get()
                 old_value = self.num_stocks
-                self.num_stocks = int(new_value)
+                if str(new_value).lower() == "all":
+                    self.num_stocks = len(self.stocklist.index)
+                else:
+                    self.num_stocks = int(new_value)
 
                 if old_value == self.num_stocks:
                     return
