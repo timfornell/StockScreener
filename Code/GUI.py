@@ -96,8 +96,10 @@ class GUI(Frame):
         if region == "heading":
             column = self.tree.identify_column(event.x)
             heading = self.tree.heading(column)
+            if heading["text"] == self.sort_variable_string:
+                self.change_sort_direction(mouse_click=True)
+            
             self.set_sort_variable(heading["text"], mouse_click=True)
-            self.change_sort_direction(mouse_click=True)
             self.sort_stocklist()
 
 
