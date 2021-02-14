@@ -14,9 +14,9 @@ class GUI(Frame):
         self.working_stocklist = self.stocklist.head()
         self.initialize_user_interface()
 
-    
+
     def initialize_user_interface(self) -> None:
-        # Configure the root object 
+        # Configure the root object
         self.root.title("Stock Screener")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
@@ -26,7 +26,7 @@ class GUI(Frame):
         self.sort_options = list(self.stocklist.columns)
         self.sort_variable_string = "Volume"
         self.sort_direction = False # False is descending and True is ascending
-        
+
         # Define the different GUI widgets
         self.options_frame = Frame(self.root)
         self.options_frame.pack(side=TOP)
@@ -34,7 +34,7 @@ class GUI(Frame):
         # Sort options
         self.sort_frame = Frame(self.options_frame)
         self.sort_frame.pack(side=LEFT)
-        
+
         self.sort_key_frame = Frame(self.sort_frame)
         self.sort_key_frame.pack(side=TOP)
         self.sort_var = StringVar(self.sort_key_frame, value=self.sort_variable_string)
@@ -54,7 +54,7 @@ class GUI(Frame):
         # Number of stocks to display
         self.num_stocks_frame = Frame(self.options_frame)
         self.num_stocks_frame.pack(side=RIGHT)
-        
+
         self.num_stocks_entry_frame = Frame(self.num_stocks_frame)
         self.num_stocks_entry_frame.pack(side=TOP)
         self.number_of_stocks_label = Label(self.num_stocks_entry_frame, text="Number of stocks to show:")
@@ -71,7 +71,7 @@ class GUI(Frame):
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.stocklist.columns), selectmode='browse')
         self.tree.bind("<Button-1>", self.mouse_click)
         self.tree.pack(side=RIGHT, fill="both", expand=True)
-    
+
         for i, col in enumerate(self.stocklist.columns):
             self.tree.heading("{}".format(i), text=col)
             self.tree.column("{}".format(i), stretch=YES, width=120)
@@ -90,7 +90,7 @@ class GUI(Frame):
 
         self.update_stocklist(initialize=True)
 
-    
+
     def mouse_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
         if region == "heading":
@@ -98,7 +98,7 @@ class GUI(Frame):
             heading = self.tree.heading(column)
             if heading["text"] == self.sort_variable_string:
                 self.change_sort_direction(mouse_click=True)
-            
+
             self.set_sort_variable(heading["text"], mouse_click=True)
             self.sort_stocklist()
 
@@ -108,11 +108,11 @@ class GUI(Frame):
         if focused_widget is self.number_of_stocks_entry:
             self.update_stocklist()
 
-    
+
     def get_sort_direction(self):
         return "Ascending" if self.sort_direction else "Descending"
 
-    
+
     def switch_sort_direction(self):
         self.sort_direction = not self.sort_direction
         self.sorting_direction_button.configure(text="Direction: {}".format(self.get_sort_direction()))
@@ -131,7 +131,7 @@ class GUI(Frame):
 
             if mouse_click:
                 self.sort_var.set(selection)
-            
+
 
     def update_stocklist(self, initialize=False, sorting=False) -> None:
         if not initialize and not sorting:
@@ -144,12 +144,12 @@ class GUI(Frame):
                     return
             except:
                 print("Could not change to new value: {}.".format(new_value))
-                        
+
         if not sorting:
             print("Limit stocklist to {}.".format(self.num_stocks))
             self.working_stocklist = self.stocklist.head(self.num_stocks)
             self.clear_tree()
-        
+
         for i, stock in enumerate(self.working_stocklist.iterrows()):
             self.insert_data(i, stock)
 
@@ -169,12 +169,8 @@ class GUI(Frame):
         # For some reason 'text=' corresponds to the first column in the tree
         self.treeview.insert("", "end", iid=id, values=tuple(stock[1]))
 
-    
+
     def clear_tree(self) -> None:
         # Clear current tree
         for row in self.treeview.get_children():
             self.treeview.delete(row)
-
-
-app = GUI(Tk())
-app.root.mainloop()
