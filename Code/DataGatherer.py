@@ -52,6 +52,10 @@ def get_monthly_sentiment_data_from_sentdex() -> pd.DataFrame:
                                       'Sentiment': sentiment,
                                       'Direction': sentiment_trend,
                                       'Mentions':mentions})
+    
+    company_info["Mentions"] = company_info["Mentions"].replace(",", "", regex=True)
+    company_info["Mentions"] = pd.to_numeric(company_info["Mentions"])
+
     return company_info
 
 
@@ -87,6 +91,8 @@ def get_bull_bear_data_from_twitter() -> pd.DataFrame:
     twitter_df.dropna(inplace=True)
     twitter_df.drop_duplicates(subset ="Symbol", keep='first', inplace=True)
     twitter_df.reset_index(drop=True, inplace=True)
+    twitter_df["Twit_Bull_score"] = twitter_df["Twit_Bull_score"].replace(",", "", regex=True)
+    twitter_df["Twit_Bull_score"] = pd.to_numeric(twitter_df["Twit_Bull_score"])
     
     return twitter_df
 
@@ -101,6 +107,8 @@ def get_twitter_momentum_score() -> pd.DataFrame:
     twitter_momentum.drop_duplicates(subset ="Symbol", 
                         keep = 'first', inplace = True)
     twitter_momentum.reset_index(drop=True,inplace=True)
+    twitter_momentum["Twit_mom"] = twitter_momentum["Twit_mom"].replace(",", "", regex=True)
+    twitter_momentum["Twit_mom"] = pd.to_numeric(twitter_momentum["Twit_mom"])
     return twitter_momentum
 
 def data_gatherer() -> pd.DataFrame:
