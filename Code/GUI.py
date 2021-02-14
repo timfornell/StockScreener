@@ -54,14 +54,16 @@ class GUI(Frame):
         # Number of stocks to display
         self.num_stocks_frame = Frame(self.options_frame)
         self.num_stocks_frame.pack(side=RIGHT)
-        self.number_of_stocks_label = Label(self.num_stocks_frame, text="Number of stocks to show:")
-        self.number_of_stocks_entry = Entry(self.num_stocks_frame)
-        self.number_of_stocks_entry.pack(side=LEFT)
-        self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply",
-                                              command=self.update_stocklist)
-        self.number_of_stocks_label.pack(side=TOP)
-        self.number_of_stocks_entry.pack(side=LEFT)
-        self.submit_number_of_stocks.pack(side=RIGHT)
+        
+        self.num_stocks_entry_frame = Frame(self.num_stocks_frame)
+        self.num_stocks_entry_frame.pack(side=TOP)
+        self.number_of_stocks_label = Label(self.num_stocks_entry_frame, text="Number of stocks to show:")
+        self.number_of_stocks_entry = Entry(self.num_stocks_entry_frame)
+        self.number_of_stocks_label.pack(side=LEFT)
+        self.number_of_stocks_entry.pack(side=RIGHT)
+
+        self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply", command=self.update_stocklist)
+        self.submit_number_of_stocks.pack(side=BOTTOM)
 
         # Setup treeview
         self.tree_frame = Frame(self.root)
