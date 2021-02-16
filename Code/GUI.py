@@ -17,7 +17,7 @@ class GUI(Frame):
         print("GUI has initialized!")
         event.set()
         print("GUI has set event.")
-
+        self.root.after(2000, self.check_for_new_data)
 
     def initialize_user_interface(self) -> None:
         # Configure the root object
@@ -173,7 +173,6 @@ class GUI(Frame):
 
 
     def insert_data(self, id, stock) -> None:
-        # For some reason 'text=' corresponds to the first column in the tree
         self.treeview.insert("", "end", iid=id, values=tuple(stock[1]))
 
 
@@ -181,3 +180,13 @@ class GUI(Frame):
         # Clear current tree
         for row in self.treeview.get_children():
             self.treeview.delete(row)
+
+
+    def check_for_new_data(self) -> None:
+        print("Checking for new data to load...")
+        """
+        Should look somewhere if there is new data available, perhaps make the DataGatherer into a class and put a private variable there?
+        Should spawn a new process that should be responsible for laoding the data
+        Should then call a function in DataGatherer.py, perhaps data_gatherer, to load the data
+        Should signal the GUI when the data has been loaded so that it can update its working data
+        """

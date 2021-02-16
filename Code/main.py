@@ -18,6 +18,7 @@ def run_data_gatherer(event):
     print("run_data_gatherer started running!", event.is_set())
 
 
+
 if __name__ == "__main__":
     # Fix to work around multiprocessing in a venv
     # https://stackoverflow.com/questions/54480527/multiprocessing-asyncresult-get-hangs-in-python-3-7-2-but-not-in-3-6
