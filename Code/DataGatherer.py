@@ -114,6 +114,7 @@ def get_twitter_momentum_score() -> pd.DataFrame:
     twitter_momentum.drop_duplicates(subset ="Symbol",
                         keep = 'first', inplace = True)
     twitter_momentum.reset_index(drop=True,inplace=True)
+    twitter_momentum = twitter_momentum.rename(columns={"Twit_30d_mom": "Twit_30d_Mom"})
     twitter_momentum["Twit_30d_Mom"] = twitter_momentum["Twit_30d_Mom"].replace(",", "", regex=True)
     twitter_momentum["Twit_30d_Mom"] = pd.to_numeric(twitter_momentum["Twit_30d_Mom"])
     return twitter_momentum
