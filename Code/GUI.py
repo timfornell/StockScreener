@@ -1,4 +1,5 @@
 import pandas as pd
+import multiprocessing as mp
 
 from DataGatherer import data_gatherer
 from tkinter import *
@@ -6,13 +7,16 @@ from tkinter import ttk
 
 
 class GUI(Frame):
-    def __init__(self, root):
+    def __init__(self, root, event: mp.Event):
         self.id = 0
         self.num_stocks = 10
         self.root = root
         self.stocklist = data_gatherer()
         self.working_stocklist = self.stocklist.head()
         self.initialize_user_interface()
+        print("GUI has initialized!")
+        event.set()
+        print("GUI has set event.")
 
 
     def initialize_user_interface(self) -> None:
