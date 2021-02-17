@@ -2,32 +2,37 @@ import sys
 import multiprocessing as mp
 
 from DataInterface import DataInterface
+from Definitions import DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, GUI_MESSAGE_HEADER
 from GUI import GUI
 from DataGatherer import DataGatherer
 from tkinter import *
 from multiprocessing.managers import BaseManager
 
+import time
 
-def run_GUI(data_interface: DataInterface, event: mp.Event, lock: mp.Lock):
-    print("GUI waiting for data gatherer to finish.")
-    event.wait()
-    print("Data gatherer has finished: {}, starting GUI!".format(event.is_set()))
-    app = GUI(Tk(), data_interface, event, lock)
+
+def run_data_interface(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
+    app = GUI(Tk(), event, lock, queue)
     app.root.mainloop()
-    print("GUI finished!")
 
 
-def run_data_gatherer(data_interface: DataInterface, event: mp.Event, lock: mp.Lock):
-    print("Data gatherer starting...")
+def run_data_gatherer(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
+    print("{} Data gatherer starting...".format(DATA_GATHERER_MESSAGE_HEADER))
     data_gatherer = DataGatherer(lock)
     data_gatherer.gather_data()
-    with lock:
-        print("Data gatherer acquired lock to update data interface.")
-        data_interface.update_stocklist()
-        print("Data is updated")
-
+    print("{} Data gathering finished!".format(DATA_GATHERER_MESSAGE_HEADER))
     event.set()
-    print("Event set! Will start gathering missing data...")
+    print("{} Event set! Will start gathering missing data...".format(DATA_GATHERER_MESSAGE_HEADER))
+    iterations = 0
+    while True:
+        iterations += 1
+        time.sleep(2)
+        print("{} Gathered some new data.".format(DATA_GATHERER_MESSAGE_HEADER))
+        if iterations % 2 == 0:
+            print("{} Enough data gathered, tell interface to read it.".format(DATA_GATHERER_MESSAGE_HEADER))
+            queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
+            print("{} queuesize: {}".format(DATA_GATHERER_MESSAGE_HEADER, queue.qsize()))
+
 
 
 
@@ -39,21 +44,18 @@ if __name__ == "__main__":
         import multiprocessing.spawn
         multiprocessing.spawn.set_executable(_winapi.GetModuleFileName(0))
 
-    BaseManager.register('DataInterface', DataInterface)
-    manager = BaseManager()
-    manager.start()
-    data_interface = manager.DataInterface()
-
     # The event is used to signal between the data gatherer and the GUI during startup that there is data available
     event = mp.Event()
     # The lock is intended to protect the DataInterface object to be accessed at the same time
     lock = mp.Lock()
+    # The queue is intended to be used to signal the data interface when new data can be read
+    queue = mp.Queue()
 
-    gui_proc = mp.Process(name="GUI", target=run_GUI, args=(data_interface, event, lock,))
-    gui_proc.start()
+    data_if_proc = mp.Process(name="Data_Interface", target=run_data_interface, args=(event, lock, queue))
+    data_if_proc.start()
 
-    data_proc = mp.Process(name="Data_Gatherer", target=run_data_gatherer, args=(data_interface, event, lock,))
-    data_proc.start()
+    data_gath_proc = mp.Process(name="Data_Gatherer", target=run_data_gatherer, args=(event, lock, queue))
+    data_gath_proc.start()
 
-    gui_proc.join()
-    data_proc.join()
+    data_if_proc.join()
+    data_gath_proc.join()

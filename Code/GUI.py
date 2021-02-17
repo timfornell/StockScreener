@@ -5,19 +5,20 @@ from DataInterface import DataInterface
 from tkinter import *
 from tkinter import ttk
 
+from Definitions import GUI_MESSAGE_HEADER
+
 
 class GUI(Frame):
-    def __init__(self, root, data_interface: DataInterface, event: mp.Event, lock: mp.Lock):
-        self.data_interface = data_interface
+    def __init__(self, root, event, lock, queue):
+        self.data_interface = DataInterface(event, lock, queue)
+        print("{} Data interface has finished: {}, starting GUI!".format(GUI_MESSAGE_HEADER, event.is_set()))
         self.id = 0
         self.num_stocks = "10"
         self.root = root
-        with lock:
-            print("GUI acquired lock to initialize.")
-            self.initialize_user_interface()
+        self.initialize_user_interface()
+        print("{} GUI has initialized!".format(GUI_MESSAGE_HEADER))
+        self.root.after(5000, self.check_for_new_data)
 
-        print("GUI has initialized! Releasing lock.")
-        self.root.after(2000, self.check_for_new_data)
 
     def initialize_user_interface(self) -> None:
         # Configure the root object
@@ -148,7 +149,7 @@ class GUI(Frame):
                 self.data_interface.set_working_stocklist(new_value)
 
         if not sorting:
-            print("Limit stocklist to {}.".format(self.num_stocks))
+            print("{} Limit stocklist to {}.".format(GUI_MESSAGE_HEADER, self.num_stocks))
             self.data_interface.set_working_stocklist(self.num_stocks)
             self.clear_tree()
 
@@ -175,5 +176,6 @@ class GUI(Frame):
 
 
     def check_for_new_data(self) -> None:
-        print("Checking for new data to load...")
-
+        print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
+        self.data_interface.update_stocklist()
+        self.root.after(5000, self.check_for_new_data)

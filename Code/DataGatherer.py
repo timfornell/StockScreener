@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Tuple
 from pathlib import Path
 from datetime import date
-from Definitions import DATA_FOLDER
+from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER
 
 
 
@@ -56,7 +56,7 @@ class DataGatherer():
                     else:
                         sentiment_trend.append('down')
                 except:
-                    print("No data found, continue with next ticker.")
+                    print("{} No data found, continue with next ticker.".format(DATA_GATHERER_MESSAGE_HEADER))
 
         company_info = pd.DataFrame(data={'Symbol': ticker_name,
                                         'Sentiment': sentiment,
@@ -155,7 +155,7 @@ class DataGatherer():
             soup = BeautifulSoup(yahoo_data.text, "html.parser")
             stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text
         except:
-            print("Something went wrong when parsin name for ticker {}.".format(symbol))
+            print("{} Something went wrong when parsin name for ticker {}.".format(DATA_GATHERER_MESSAGE_HEADER, symbol))
 
         return stock_name
 
@@ -175,25 +175,42 @@ class DataGatherer():
             twitter_momentum = self.get_twitter_data(stock["Symbol"], stock_df.loc[i, "Name"])
             stock_df.loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
             stock_df.loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
-            print("Finished with {} ({}), {}/{}".format(stock_df.loc[i, "Name"], stock["Symbol"], i, n))
+            print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER, stock_df.loc[i, "Name"], stock["Symbol"], i, n))
 
         return stock_df
 
 
     def gather_data(self) -> None:
         try:
-            # The intention of these function calls is to build a list of interesting stocks
-            if not DATA_FOLDER.exists():
-                Path.mkdir(DATA_FOLDER)
+            with self.lock:
+                # The intention of these function calls is to build a list of interesting stocks
+                if not DATA_FOLDER.exists():
+                    Path.mkdir(DATA_FOLDER)
 
-            if not any(Path(DATA_FOLDER).iterdir()):
-                movers = self.get_most_active_with_positive_change()
-                company_info = self.get_monthly_sentiment_data_from_sentdex()
-                twitter_data_bull_bear = self.get_bull_bear_data_from_twitter()
-                twitter_momentum = self.get_twitter_momentum_score()
-                movers.to_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
-                company_info.to_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
-                twitter_data_bull_bear.to_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
-                twitter_momentum.to_pickle(Path.joinpath(DATA_FOLDER, "momentum.pkl"))
+                if not any(Path(DATA_FOLDER).iterdir()):
+                    movers = self.get_most_active_with_positive_change()
+                    company_info = self.get_monthly_sentiment_data_from_sentdex()
+                    twitter_data_bull_bear = self.get_bull_bear_data_from_twitter()
+                    twitter_momentum = self.get_twitter_momentum_score()
+                    movers.to_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
+                    company_info.to_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
+                    twitter_data_bull_bear.to_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
+                    twitter_momentum.to_pickle(Path.joinpath(DATA_FOLDER, "momentum.pkl"))
         except Exception as e:
-            print("Failed to gather data, got {}".format(e))
+            print("{} Failed to gather data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
+
+
+    def read_data(self) -> pd.DataFrame:
+        top_stocks = pd.DataFrame()
+        try:
+            with self.lock:
+                print("{} Reading data...".format(DATA_GATHERER_MESSAGE_HEADER))
+                self.movers = pd.read_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
+                self.company_info = pd.read_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
+                self.twitter_data_bull_bear = pd.read_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
+                self.twitter_momentum = pd.read_pickle(Path.joinpath(DATA_FOLDER, "momentum.pkl"))
+                print("{} Finished reading data".format(DATA_GATHERER_MESSAGE_HEADER))
+        except Exception as e:
+            print("{} Failed to read data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
+
+        return top_stocks
