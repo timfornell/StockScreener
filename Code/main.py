@@ -1,21 +1,23 @@
-import multiprocessing as mp
-from GUI import GUI
-from DataGatherer import update_stocks_with_missing_data
-from tkinter import *
 import sys
+import multiprocessing as mp
+
+from DataInterface import DataInterface
+from GUI import GUI
+from DataGatherer import DataGatherer
+from tkinter import *
 
 
-def run_GUI(event):
+def run_GUI(event, data_interface):
     print("Starting GUI!")
-    app = GUI(Tk(), event)
+    app = GUI(Tk(), data_interface, event)
     app.root.mainloop()
     print("GUI finished!")
 
 
-def run_data_gatherer(event):
-    print("run_data_gatherer waiting for GUI to initialize...")
-    event.wait()
-    print("run_data_gatherer started running!", event.is_set())
+# def run_data_gatherer(event):
+#     print("run_data_gatherer waiting for GUI to initialize...")
+#     event.wait()
+#     print("run_data_gatherer started running!", event.is_set())
 
 
 
@@ -28,8 +30,14 @@ if __name__ == "__main__":
         multiprocessing.spawn.set_executable(_winapi.GetModuleFileName(0))
 
     event = mp.Event()
-    gui_proc = mp.Process(name="GUI", target=run_GUI, args=(event,))
-    gui_proc.start()
+    data_gatherer = DataGatherer()
+    data_gatherer.gather_data()
+    data_interface = DataInterface()
+    app = GUI(Tk(), data_interface, event)
+    app.root.mainloop()
 
-    data_proc = mp.Process(name="Data_Gatherer", target=run_data_gatherer, args=(event,))
-    data_proc.start()
+    # gui_proc = mp.Process(name="GUI", target=run_GUI, args=(event, data_interface,))
+    # gui_proc.start()
+
+    # data_proc = mp.Process(name="Data_Gatherer", target=run_data_gatherer, args=(event,))
+    # data_proc.start()

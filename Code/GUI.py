@@ -1,18 +1,17 @@
 import pandas as pd
 import multiprocessing as mp
 
-from DataGatherer import data_gatherer
+from DataInterface import DataInterface
 from tkinter import *
 from tkinter import ttk
 
 
 class GUI(Frame):
-    def __init__(self, root, event: mp.Event):
+    def __init__(self, root, data_interface: DataInterface, event: mp.Event):
+        self.data_interface = data_interface
         self.id = 0
-        self.num_stocks = 10
+        self.num_stocks = "10"
         self.root = root
-        self.stocklist = data_gatherer()
-        self.working_stocklist = self.stocklist.head()
         self.initialize_user_interface()
         print("GUI has initialized!")
         event.set()
@@ -27,7 +26,7 @@ class GUI(Frame):
         self.root.config(background="white")
 
         # Configure private variables
-        self.sort_options = list(self.stocklist.columns)
+        self.sort_options = list(self.data_interface.get_stocklist().columns)
         self.sort_variable_string = "Volume"
         self.sort_direction = False # False is descending and True is ascending
 
@@ -72,11 +71,11 @@ class GUI(Frame):
         # Setup treeview
         self.tree_frame = Frame(self.root)
         self.tree_frame.pack(side=BOTTOM, fill="both", expand=True)
-        self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.stocklist.columns), selectmode='browse')
+        self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
         self.tree.bind("<Button-1>", self.mouse_click)
         self.tree.pack(side=RIGHT, fill="both", expand=True)
 
-        for i, col in enumerate(self.stocklist.columns):
+        for i, col in enumerate(self.sort_options):
             self.tree.heading("{}".format(i), text=col)
             self.tree.column("{}".format(i), stretch=YES, width=120)
 
@@ -139,33 +138,25 @@ class GUI(Frame):
 
     def update_stocklist(self, initialize=False, sorting=False) -> None:
         if not initialize and not sorting:
-            try:
-                new_value = self.number_of_stocks_entry.get()
-                old_value = self.num_stocks
-                if str(new_value).lower() == "all":
-                    self.num_stocks = len(self.stocklist.index)
-                else:
-                    self.num_stocks = int(new_value)
+            new_value = self.number_of_stocks_entry.get()
+            old_value = self.num_stocks
 
-                if old_value == self.num_stocks:
-                    return
-            except:
-                print("Could not change to new value: {}.".format(new_value))
+            if old_value == self.num_stocks:
+                return
+            else:
+                self.data_interface.set_working_stocklist(new_value)
 
         if not sorting:
             print("Limit stocklist to {}.".format(self.num_stocks))
-            self.working_stocklist = self.stocklist.head(self.num_stocks)
+            self.data_interface.set_working_stocklist(self.num_stocks)
             self.clear_tree()
 
-        for i, stock in enumerate(self.working_stocklist.iterrows()):
+        for i, stock in enumerate(self.data_interface.get_working_stocklist().iterrows()):
             self.insert_data(i, stock)
 
 
     def sort_stocklist(self) -> None:
-        if self.sort_variable_string in self.working_stocklist.columns:
-            print("Sorting stocklist based on '{}'.".format(self.sort_variable_string))
-            self.working_stocklist = self.working_stocklist.sort_values(by=[self.sort_variable_string],
-                                                                        ascending=self.sort_direction)
+        if self.data_interface.sort_working_stocklist(self.sort_variable_string, self.sort_direction):
             self.clear_tree()
 
             # Draw new sorted stocklist
@@ -184,9 +175,4 @@ class GUI(Frame):
 
     def check_for_new_data(self) -> None:
         print("Checking for new data to load...")
-        """
-        Should look somewhere if there is new data available, perhaps make the DataGatherer into a class and put a private variable there?
-        Should spawn a new process that should be responsible for laoding the data
-        Should then call a function in DataGatherer.py, perhaps data_gatherer, to load the data
-        Should signal the GUI when the data has been loaded so that it can update its working data
-        """
+
