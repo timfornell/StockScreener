@@ -5,6 +5,7 @@ from DataInterface import DataInterface
 from GUI import GUI
 from DataGatherer import DataGatherer
 from tkinter import *
+from multiprocessing.managers import BaseManager
 
 
 def run_GUI(data_interface: DataInterface, event: mp.Event, lock: mp.Lock):
@@ -38,14 +39,21 @@ if __name__ == "__main__":
         import multiprocessing.spawn
         multiprocessing.spawn.set_executable(_winapi.GetModuleFileName(0))
 
+    BaseManager.register('DataInterface', DataInterface)
+    manager = BaseManager()
+    manager.start()
+    data_interface = manager.DataInterface()
+
     # The event is used to signal between the data gatherer and the GUI during startup that there is data available
     event = mp.Event()
     # The lock is intended to protect the DataInterface object to be accessed at the same time
     lock = mp.Lock()
-    data_interface = DataInterface()
 
     gui_proc = mp.Process(name="GUI", target=run_GUI, args=(data_interface, event, lock,))
     gui_proc.start()
 
     data_proc = mp.Process(name="Data_Gatherer", target=run_data_gatherer, args=(data_interface, event, lock,))
     data_proc.start()
+
+    gui_proc.join()
+    data_proc.join()
