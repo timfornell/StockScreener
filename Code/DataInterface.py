@@ -4,7 +4,12 @@ from pathlib import Path
 from Definitions import DATA_FOLDER
 
 class DataInterface():
-    def __init__(self) -> None:
+    def __init__(self):
+        self.stocklist = pd.DataFrame()
+        self.working_stocklist = pd.DataFrame()
+
+
+    def update_stocklist(self) -> None:
         self.stocklist = self.read_data()
         self.working_stocklist = self.stocklist.head()
 
@@ -49,6 +54,7 @@ class DataInterface():
     def read_data(self) -> pd.DataFrame:
         top_stocks = pd.DataFrame()
         try:
+            print("Reading data...")
             movers = pd.read_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
             company_info = pd.read_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
             twitter_data_bull_bear = pd.read_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
@@ -60,6 +66,7 @@ class DataInterface():
             top_stocks = top_stocks.merge(twitter_momentum, on='Symbol', how='outer')
             top_stocks.drop(['Market Cap'], axis=1, inplace=True)
             top_stocks = self.merge_sector_and_industry_columns(top_stocks)
+            print("Finished reading data...")
         except Exception as e:
             print("Failed to read data, got {}".format(e))
 

@@ -7,15 +7,16 @@ from tkinter import ttk
 
 
 class GUI(Frame):
-    def __init__(self, root, data_interface: DataInterface, event: mp.Event):
+    def __init__(self, root, data_interface: DataInterface, event: mp.Event, lock: mp.Lock):
         self.data_interface = data_interface
         self.id = 0
         self.num_stocks = "10"
         self.root = root
-        self.initialize_user_interface()
-        print("GUI has initialized!")
-        event.set()
-        print("GUI has set event.")
+        with lock:
+            print("GUI acquired lock to initialize.")
+            self.initialize_user_interface()
+
+        print("GUI has initialized! Releasing lock.")
         self.root.after(2000, self.check_for_new_data)
 
     def initialize_user_interface(self) -> None:

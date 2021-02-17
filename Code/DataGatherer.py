@@ -5,6 +5,7 @@ import pandas as pd
 import pandas_datareader as web
 import requests
 import yahoo_fin.stock_info as ya
+import multiprocessing as mp
 
 from alpha_vantage.sectorperformance import SectorPerformances
 from alpha_vantage.techindicators import TechIndicators
@@ -18,6 +19,10 @@ from Definitions import DATA_FOLDER
 
 
 class DataGatherer():
+    def __init__(self, lock: mp.Lock):
+        self.lock = lock
+
+
     def get_most_active_with_positive_change(self) -> list:
         # Get the 100 most traded stocks for the trading day
         movers = ya.get_day_most_active()
