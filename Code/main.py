@@ -31,7 +31,7 @@ def run_data_gatherer(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
         if iterations % 2 == 0:
             print("{} Enough data gathered, tell interface to read it.".format(DATA_GATHERER_MESSAGE_HEADER))
             queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
-            print("{} queuesize: {}".format(DATA_GATHERER_MESSAGE_HEADER, queue.qsize()))
+            print("{} iteration: {}".format(DATA_GATHERER_MESSAGE_HEADER, iterations))
 
 
 
