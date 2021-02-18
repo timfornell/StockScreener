@@ -4,7 +4,7 @@ import multiprocessing as mp
 import time
 
 from pathlib import Path
-from Definitions import DATA_FOLDER, DATA_INTERFACE_MESSAGE_HEADER
+from Definitions import DATA_FOLDER, DATA_INTERFACE_MESSAGE_HEADER, STOCKLISTS
 
 class DataInterface():
     def __init__(self, event, lock: mp.Lock, queue: mp.Queue):
@@ -79,15 +79,13 @@ class DataInterface():
         try:
             with self.lock:
                 print("{} Reading data...".format(DATA_INTERFACE_MESSAGE_HEADER))
-                movers = pd.read_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
-                company_info = pd.read_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
-                twitter_data_bull_bear = pd.read_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
-                twitter_momentum = pd.read_pickle(Path.joinpath(DATA_FOLDER, "momentum.pkl"))
+                for stocklist in STOCKLISTS:
+                    stocks = pd.read_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
+                    if not top_stocks.empty:
+                        top_stocks = top_stocks.merge(stocks, on="Symbol", how="outer")
+                    else:
+                        top_stocks = stocks
 
-                # Merge with "how='outer'" to not remove any symbols
-                top_stocks = movers.merge(company_info, on='Symbol', how='outer')
-                top_stocks = top_stocks.merge(twitter_data_bull_bear, on='Symbol', how='outer')
-                top_stocks = top_stocks.merge(twitter_momentum, on='Symbol', how='outer')
                 top_stocks.drop(['Market Cap'], axis=1, inplace=True)
                 top_stocks = self.merge_sector_and_industry_columns(top_stocks)
                 print("{} Finished reading data...".format(DATA_INTERFACE_MESSAGE_HEADER))

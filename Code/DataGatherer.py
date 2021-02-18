@@ -14,13 +14,15 @@ from bs4 import BeautifulSoup
 from typing import List, Tuple
 from pathlib import Path
 from datetime import date
-from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER
+from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, STOCKLISTS
 
 
 
 class DataGatherer():
     def __init__(self, lock: mp.Lock):
         self.lock = lock
+        self.stocklists = {key: pd.DataFrame for key in STOCKLISTS}
+        self.lists_to_update = list(STOCKLISTS)
 
 
     def get_most_active_with_positive_change(self) -> list:
@@ -125,6 +127,11 @@ class DataGatherer():
         twitter_momentum = twitter_momentum.rename(columns={"Twit_30d_mom": "Twit_30d_Mom"})
         twitter_momentum["Twit_30d_Mom"] = twitter_momentum["Twit_30d_Mom"].replace(",", "", regex=True)
         twitter_momentum["Twit_30d_Mom"] = pd.to_numeric(twitter_momentum["Twit_30d_Mom"])
+
+        # These columns are empty here, but will be filled in later, they are added so that the GUI can show them
+        self.stocklists[stocklist]["Twit_1d_Mom"] = np.nan
+        self.stocklists[stocklist]["Twit_7d_Mom"] = np.nan
+
         return twitter_momentum
 
 
@@ -160,8 +167,8 @@ class DataGatherer():
         return stock_name
 
 
-    def update_stocks_with_missing_data(self, stock_df: pd.DataFrame) -> pd.DataFrame:
-        n = len(stock_df["Symbol"])
+    def update_stocks_with_missing_data(self) -> None:
+        stock_df = []
         for i, stock in stock_df.iterrows():
             if stock["Name"] is np.nan and stock["Symbol"] != "SP500":
                 stock_name = self.get_stock_info(stock["Symbol"])
@@ -175,33 +182,42 @@ class DataGatherer():
             twitter_momentum = self.get_twitter_data(stock["Symbol"], stock_df.loc[i, "Name"])
             stock_df.loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
             stock_df.loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
-            print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER, stock_df.loc[i, "Name"], stock["Symbol"], i, n))
+            print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
+                                                           stock_df.loc[i, "Name"],
+                                                           stock["Symbol"], i))
 
         return stock_df
 
 
+    def get_stocklist(self, stocklist: STOCKLISTS) -> None:
+        if stocklist == STOCKLISTS.Movers:
+            self.stocklists[stocklist] = self.get_most_active_with_positive_change()
+        elif stocklist == STOCKLISTS.CompanyInfo:
+            self.stocklists[stocklist] = self.get_monthly_sentiment_data_from_sentdex()
+        elif stocklist == STOCKLISTS.TwitterBullBear:
+            self.stocklists[stocklist] = self.get_bull_bear_data_from_twitter()
+        elif stocklist == STOCKLISTS.TwitterMomentum:
+            self.stocklists[stocklist] = self.get_twitter_momentum_score()
+
+
     def gather_data(self) -> None:
         try:
-            with self.lock:
-                # The intention of these function calls is to build a list of interesting stocks
-                if not DATA_FOLDER.exists():
+            if not DATA_FOLDER.exists():
+                with self.lock:
                     Path.mkdir(DATA_FOLDER)
 
-                if not any(Path(DATA_FOLDER).iterdir()):
-                    movers = self.get_most_active_with_positive_change()
-                    company_info = self.get_monthly_sentiment_data_from_sentdex()
-                    twitter_data_bull_bear = self.get_bull_bear_data_from_twitter()
-                    twitter_momentum = self.get_twitter_momentum_score()
-                    movers.to_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
-                    company_info.to_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
-                    twitter_data_bull_bear.to_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
-                    twitter_momentum.to_pickle(Path.joinpath(DATA_FOLDER, "momentum.pkl"))
+            if not any(Path(DATA_FOLDER).iterdir()):
+                with self.lock:
+                    for stocklist in STOCKLISTS:
+                        self.get_stocklist(stocklist)
+                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
+            else:
+                self.read_data()
         except Exception as e:
             print("{} Failed to gather data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
 
 
-    def read_data(self) -> pd.DataFrame:
-        top_stocks = pd.DataFrame()
+    def read_data(self) -> None:
         try:
             with self.lock:
                 print("{} Reading data...".format(DATA_GATHERER_MESSAGE_HEADER))
@@ -212,5 +228,3 @@ class DataGatherer():
                 print("{} Finished reading data".format(DATA_GATHERER_MESSAGE_HEADER))
         except Exception as e:
             print("{} Failed to read data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
-
-        return top_stocks
