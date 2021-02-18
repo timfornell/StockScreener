@@ -14,15 +14,16 @@ from bs4 import BeautifulSoup
 from typing import List, Tuple
 from pathlib import Path
 from datetime import date
-from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, STOCKLISTS
 
+from DataFormatingCommon import read_data_from_files_to_dict, set_common_dataframe_columns
+from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_PARSED_TO_SIGNAL, STOCKLISTS
 
 
 class DataGatherer():
-    def __init__(self, lock: mp.Lock):
+    def __init__(self, lock: mp.Lock, queue: mp.Queue):
         self.lock = lock
-        self.stocklists = {key: pd.DataFrame for key in STOCKLISTS}
-        self.lists_to_update = list(STOCKLISTS)
+        self.queue = queue
+        self.stocklists = {key: pd.DataFrame() for key in STOCKLISTS}
 
 
     def get_most_active_with_positive_change(self) -> list:
@@ -129,8 +130,8 @@ class DataGatherer():
         twitter_momentum["Twit_30d_Mom"] = pd.to_numeric(twitter_momentum["Twit_30d_Mom"])
 
         # These columns are empty here, but will be filled in later, they are added so that the GUI can show them
-        self.stocklists[stocklist]["Twit_1d_Mom"] = np.nan
-        self.stocklists[stocklist]["Twit_7d_Mom"] = np.nan
+        twitter_momentum["Twit_1d_Mom"] = np.nan
+        twitter_momentum["Twit_7d_Mom"] = np.nan
 
         return twitter_momentum
 
@@ -168,25 +169,28 @@ class DataGatherer():
 
 
     def update_stocks_with_missing_data(self) -> None:
-        stock_df = []
-        for i, stock in stock_df.iterrows():
-            if stock["Name"] is np.nan and stock["Symbol"] != "SP500":
-                stock_name = self.get_stock_info(stock["Symbol"])
-                if stock_name is not np.nan:
-                    stock_df.loc[i, "Name"] = stock_name
-                else:
-                    stock_df = stock_df.drop([i], axis=0)
-                    continue
+        for stocklist in STOCKLISTS:
+            for i, stock in self.stocklists[stocklist].iterrows():
+                if stock["Name"] is np.nan and stock["Symbol"] != "SP500":
+                    stock_name = self.get_stock_info(stock["Symbol"])
+                    if stock_name is not np.nan:
+                        self.stocklists[stocklist].loc[i, "Name"] = stock_name
+                    else:
+                        self.stocklists[stocklist] = self.stocklists[stocklist].drop([i], axis=0)
+                        continue
 
-            # sentiment_data = get_sentiment_data(stock["Name"])
-            twitter_momentum = self.get_twitter_data(stock["Symbol"], stock_df.loc[i, "Name"])
-            stock_df.loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
-            stock_df.loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
-            print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
-                                                           stock_df.loc[i, "Name"],
-                                                           stock["Symbol"], i))
+                # sentiment_data = get_sentiment_data(stock["Name"])
+                twitter_momentum = self.get_twitter_data(stock["Symbol"], self.stocklists[stocklist].loc[i, "Name"])
+                self.stocklists[stocklist].loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
+                self.stocklists[stocklist].loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
+                print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
+                                                                self.stocklists[stocklist].loc[i, "Name"],
+                                                                stock["Symbol"]))
 
-        return stock_df
+                if i % ENOUGH_STOCKS_PARSED_TO_SIGNAL:
+                    with self.lock:
+                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
+                    self.queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
 
 
     def get_stocklist(self, stocklist: STOCKLISTS) -> None:
@@ -210,6 +214,10 @@ class DataGatherer():
                 with self.lock:
                     for stocklist in STOCKLISTS:
                         self.get_stocklist(stocklist)
+
+                    set_common_dataframe_columns(self.stocklists)
+
+                    for stocklist in STOCKLISTS:
                         self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
             else:
                 self.read_data()
@@ -221,10 +229,7 @@ class DataGatherer():
         try:
             with self.lock:
                 print("{} Reading data...".format(DATA_GATHERER_MESSAGE_HEADER))
-                self.movers = pd.read_pickle(Path.joinpath(DATA_FOLDER, "movers.pkl"))
-                self.company_info = pd.read_pickle(Path.joinpath(DATA_FOLDER, "company_info.pkl"))
-                self.twitter_data_bull_bear = pd.read_pickle(Path.joinpath(DATA_FOLDER, "twitter.pkl"))
-                self.twitter_momentum = pd.read_pickle(Path.joinpath(DATA_FOLDER, "momentum.pkl"))
+                self.stocklists = read_data_from_files_to_dict()
                 print("{} Finished reading data".format(DATA_GATHERER_MESSAGE_HEADER))
         except Exception as e:
             print("{} Failed to read data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))

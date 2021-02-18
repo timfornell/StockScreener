@@ -4,6 +4,8 @@ import multiprocessing as mp
 import time
 
 from pathlib import Path
+from DataFormatingCommon import read_data_from_files_to_single_dataframe
+
 from Definitions import DATA_FOLDER, DATA_INTERFACE_MESSAGE_HEADER, STOCKLISTS
 
 class DataInterface():
@@ -66,28 +68,12 @@ class DataInterface():
         return list_was_sorted
 
 
-    def merge_sector_and_industry_columns(self, stock_df: pd.DataFrame) -> pd.DataFrame:
-        stock_df["Sector"] = stock_df["Sector_x"].combine_first(stock_df["Sector_y"])
-        stock_df = stock_df.drop(["Sector_x", "Sector_y"], axis=1)
-        stock_df["Industry"] = stock_df["Industry_x"].combine_first(stock_df["Industry_y"])
-        stock_df = stock_df.drop(["Industry_x", "Industry_y"], axis=1)
-        return stock_df
-
-
     def read_data(self) -> pd.DataFrame:
         top_stocks = pd.DataFrame()
         try:
             with self.lock:
                 print("{} Reading data...".format(DATA_INTERFACE_MESSAGE_HEADER))
-                for stocklist in STOCKLISTS:
-                    stocks = pd.read_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
-                    if not top_stocks.empty:
-                        top_stocks = top_stocks.merge(stocks, on="Symbol", how="outer")
-                    else:
-                        top_stocks = stocks
-
-                top_stocks.drop(['Market Cap'], axis=1, inplace=True)
-                top_stocks = self.merge_sector_and_industry_columns(top_stocks)
+                top_stocks = read_data_from_files_to_single_dataframe()
                 print("{} Finished reading data...".format(DATA_INTERFACE_MESSAGE_HEADER))
         except Exception as e:
             print("{} Failed to read data, got {}".format(DATA_INTERFACE_MESSAGE_HEADER, e))

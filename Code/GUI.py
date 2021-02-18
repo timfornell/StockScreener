@@ -51,8 +51,9 @@ class GUI(Frame):
         self.sort_key_buttons = Frame(self.sort_frame)
         self.sort_key_buttons.pack(side=BOTTOM)
         self.submit_sorting_option = Button(self.sort_key_buttons, text="Apply sorting", command=self.sort_stocklist)
-        self.sorting_direction_button = Button(self.sort_key_buttons, text="Direction: {}".format(self.get_sort_direction()),
-                                               command=self.change_sort_direction)
+        self.sorting_direction_button = Button(self.sort_key_buttons,
+                                                text="Direction: {}".format(self.get_sort_direction()),
+                                                                            command=self.change_sort_direction)
         self.submit_sorting_option.pack(side=RIGHT)
         self.sorting_direction_button.pack(side=LEFT)
 

@@ -13,3 +13,5 @@ STOCKLISTS = Enum("Stocklists",
                  "CompanyInfo " +
                  "TwitterBullBear " +
                  "TwitterMomentum")
+
+ENOUGH_STOCKS_PARSED_TO_SIGNAL = 2

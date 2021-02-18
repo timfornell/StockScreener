@@ -1,14 +1,13 @@
 import sys
 import multiprocessing as mp
 
+from tkinter import *
+from multiprocessing.managers import BaseManager
+
 from DataInterface import DataInterface
 from Definitions import DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, GUI_MESSAGE_HEADER
 from GUI import GUI
 from DataGatherer import DataGatherer
-from tkinter import *
-from multiprocessing.managers import BaseManager
-
-import time
 
 
 def run_data_interface(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
@@ -18,20 +17,21 @@ def run_data_interface(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
 
 def run_data_gatherer(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
     print("{} Data gatherer starting...".format(DATA_GATHERER_MESSAGE_HEADER))
-    data_gatherer = DataGatherer(lock)
+    data_gatherer = DataGatherer(lock, queue)
     data_gatherer.gather_data()
     print("{} Data gathering finished!".format(DATA_GATHERER_MESSAGE_HEADER))
     event.set()
     print("{} Event set! Will start gathering missing data...".format(DATA_GATHERER_MESSAGE_HEADER))
-    iterations = 0
-    while True:
-        iterations += 1
-        time.sleep(2)
-        print("{} Gathered some new data.".format(DATA_GATHERER_MESSAGE_HEADER))
-        if iterations % 2 == 0:
-            print("{} Enough data gathered, tell interface to read it.".format(DATA_GATHERER_MESSAGE_HEADER))
-            queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
-            print("{} iteration: {}".format(DATA_GATHERER_MESSAGE_HEADER, iterations))
+    # num_stocks_updated = 0
+    # while True:
+    data_gatherer.update_stocks_with_missing_data()
+    # time.sleep(1)
+    # num_stocks_updated += 1
+    # print("{} Gathered some new data.".format(DATA_GATHERER_MESSAGE_HEADER))
+    # if num_stocks_updated % 2 == 0:
+    #     print("{} Enough data gathered, tell interface to read it.".format(DATA_GATHERER_MESSAGE_HEADER))
+    #     queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
+    #     print("{} iteration: {}".format(DATA_GATHERER_MESSAGE_HEADER, num_stocks_updated))
 
 
 
