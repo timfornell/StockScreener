@@ -1,0 +1,30 @@
+flowchart TD
+    main[main.py is called] --> CreateMpObjects[Create multiprocessing variables: <br> Event, Lock, Queue]
+    CreateMpObjects --> GUICreated["Create GUI: <br> GUI(Tk(), event, lock, queue)"]
+    GUICreated --> DataInterface["Create DataInterface: <br> DataInterface(event, lock, queue)"]
+
+    subgraph DataInterfaceInitialize
+        DataInterface --> |"self.event.wait()"| DataInterfaceWaiting{{"self.event.is_set()"}}
+        DataInterfaceWaiting --> |False| DataInterfaceWaiting
+        DataInterfaceWaiting --> |True| DataInterfaceUpateStocklist["self.update_stocklist(initialize=True)"]
+        DataInterfaceUpateStocklist --> DataInterFaceLock{{Try to acquire *lock*}}
+        DataInterFaceLock --> |*lock* is not available| DataInterFaceLock
+        DataInterFaceLock --> |*lock* is available| ReadData["self.stocklist = read_data_from_files_to_single_dataframe() <br> self.working_stocklist = self.stocklist.head()"]
+    end
+
+    ReadData --> |DataInterface initialized| GUIInit["self.initialize_user_interface()"]
+
+    subgraph GUIInitialize
+        GUIInit --> GetStocklist["self.data_interface.get_stocklist()"]
+        GetStocklist --> UpdateStocklist["self.update_stocklist()"]
+    end
+
+
+    CreateMpObjects -->|Create DataGatherer| DataGatherer[DataGatherer exists]
+    DataGatherer --> DataGathererLock{{Check if lock is available}}
+    DataGathererLock --> |Lock is not available| DataGathererLock
+    DataGathererLock --> |Lock is available| GatherData
+    GatherData --> |Gather data from webpages| DataGathered[Data stored in dataframes]
+    DataGathered --> |Set common columns for all data| DataGathererColumns[All data has same columns]
+    DataGathererColumns --> |Write dataframes to pickle files| DataGathererWrittenData[Pickle files wit data exists]
+    DataGathererWrittenData --> |Set event| DataGathererEventSet[[Event has been set]]
