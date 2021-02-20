@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from DataFormatingCommon import read_data_from_files_to_single_dataframe
 
-from Definitions import DATA_FOLDER, DATA_INTERFACE_MESSAGE_HEADER, STOCKLISTS
+from Definitions import DATA_FOLDER, DATA_INTERFACE_MESSAGE_HEADER, stocklist_enum
 
 class DataInterface():
     def __init__(self, event, lock: mp.Lock, queue: mp.Queue):
@@ -17,7 +17,7 @@ class DataInterface():
         self.event = event
 
         print("{} Data interface waiting for data gatherer...".format(DATA_INTERFACE_MESSAGE_HEADER))
-        event.wait()
+        event.wait() # This shouldn't be needed in here
         print("{} Data interface continues".format(DATA_INTERFACE_MESSAGE_HEADER))
         self.update_stocklist(initialize=True)
 

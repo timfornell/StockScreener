@@ -8,7 +8,7 @@ DATA_GATHERER_MESSAGE_HEADER = "@DG:"
 GUI_MESSAGE_HEADER = "@GUI:"
 
 # Stocklist definitions
-STOCKLISTS = Enum("Stocklists",
+stocklist_enum = Enum("Stocklists",
                  "Movers " +
                  "CompanyInfo " +
                  "TwitterBullBear " +

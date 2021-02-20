@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from pandas.core.reshape.merge import merge
 
-from Definitions import DATA_FOLDER, STOCKLISTS
+from Definitions import DATA_FOLDER, stocklist_enum
 
 
 def merge_sector_and_industry_columns(stock_df: pd.DataFrame) -> pd.DataFrame:
@@ -19,7 +19,7 @@ def merge_sector_and_industry_columns(stock_df: pd.DataFrame) -> pd.DataFrame:
 
 def merge_stocklists(stocklists: dict) -> pd.DataFrame:
     top_stocks = pd.DataFrame()
-    for stocklist in STOCKLISTS:
+    for stocklist in stocklist_enum:
         stocks = pd.read_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
         if not top_stocks.empty:
             top_stocks = top_stocks.merge(stocks, on="Symbol", how="outer")
@@ -32,7 +32,7 @@ def merge_stocklists(stocklists: dict) -> pd.DataFrame:
 def read_data_from_files_to_single_dataframe() -> pd.DataFrame:
     """ To us this function the user should 'lock' the files before calling """
     stocks = {}
-    for stocklist in STOCKLISTS:
+    for stocklist in stocklist_enum:
         stocks[stocklist] = pd.read_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
 
     return merge_stocklists(stocks)
@@ -41,7 +41,7 @@ def read_data_from_files_to_single_dataframe() -> pd.DataFrame:
 def read_data_from_files_to_dict() -> dict:
     """ To us this function the user should 'lock' the files before calling """
     stocks = {}
-    for stocklist in STOCKLISTS:
+    for stocklist in stocklist_enum:
         stocks[stocklist] = pd.read_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
 
     return stocks
@@ -49,10 +49,10 @@ def read_data_from_files_to_dict() -> dict:
 
 def set_common_dataframe_columns(stocklists: dict) -> dict:
     columns = []
-    for stocklist in STOCKLISTS:
+    for stocklist in stocklist_enum:
         columns = list(set(columns + list(stocklists[stocklist].columns)))
 
-    for stocklist in STOCKLISTS:
+    for stocklist in stocklist_enum:
         for column in columns:
             if column not in stocklists[stocklist].columns:
                 stocklists[stocklist][column] = np.nan

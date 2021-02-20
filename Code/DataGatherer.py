@@ -16,14 +16,60 @@ from pathlib import Path
 from datetime import date
 
 from DataFormatingCommon import read_data_from_files_to_dict, set_common_dataframe_columns
-from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_PARSED_TO_SIGNAL, STOCKLISTS
+from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_PARSED_TO_SIGNAL, stocklist_enum
 
 
 class DataGatherer():
     def __init__(self, lock: mp.Lock, queue: mp.Queue):
         self.lock = lock
         self.queue = queue
-        self.stocklists = {key: pd.DataFrame() for key in STOCKLISTS}
+        self.stocklists = {key: pd.DataFrame() for key in stocklist_enum}
+
+
+    def gather_data(self) -> None:
+        try:
+            if not DATA_FOLDER.exists():
+                with self.lock:
+                    Path.mkdir(DATA_FOLDER)
+
+            if not any(Path(DATA_FOLDER).iterdir()):
+                with self.lock:
+                    for stocklist in stocklist_enum:
+                        self.get_stocklist(stocklist)
+
+                    set_common_dataframe_columns(self.stocklists)
+
+                    for stocklist in stocklist_enum:
+                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
+            else:
+                self.read_data()
+        except Exception as e:
+            print("{} Failed to gather data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
+
+
+    def update_stocks_with_missing_data(self) -> None:
+        for stocklist in stocklist_enum:
+            for i, stock in self.stocklists[stocklist].iterrows():
+                if stock["Name"] is np.nan and stock["Symbol"] != "SP500":
+                    stock_name = self.get_stock_info(stock["Symbol"])
+                    if stock_name is not np.nan:
+                        self.stocklists[stocklist].loc[i, "Name"] = stock_name
+                    else:
+                        self.stocklists[stocklist] = self.stocklists[stocklist].drop([i], axis=0)
+                        continue
+
+                # sentiment_data = get_sentiment_data(stock["Name"])
+                twitter_momentum = self.get_twitter_data(stock["Symbol"], self.stocklists[stocklist].loc[i, "Name"])
+                self.stocklists[stocklist].loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
+                self.stocklists[stocklist].loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
+                print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
+                                                                self.stocklists[stocklist].loc[i, "Name"],
+                                                                stock["Symbol"]))
+
+                if i % ENOUGH_STOCKS_PARSED_TO_SIGNAL:
+                    with self.lock:
+                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
+                    self.queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
 
 
     def get_most_active_with_positive_change(self) -> list:
@@ -168,61 +214,15 @@ class DataGatherer():
         return stock_name
 
 
-    def update_stocks_with_missing_data(self) -> None:
-        for stocklist in STOCKLISTS:
-            for i, stock in self.stocklists[stocklist].iterrows():
-                if stock["Name"] is np.nan and stock["Symbol"] != "SP500":
-                    stock_name = self.get_stock_info(stock["Symbol"])
-                    if stock_name is not np.nan:
-                        self.stocklists[stocklist].loc[i, "Name"] = stock_name
-                    else:
-                        self.stocklists[stocklist] = self.stocklists[stocklist].drop([i], axis=0)
-                        continue
-
-                # sentiment_data = get_sentiment_data(stock["Name"])
-                twitter_momentum = self.get_twitter_data(stock["Symbol"], self.stocklists[stocklist].loc[i, "Name"])
-                self.stocklists[stocklist].loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
-                self.stocklists[stocklist].loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
-                print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
-                                                                self.stocklists[stocklist].loc[i, "Name"],
-                                                                stock["Symbol"]))
-
-                if i % ENOUGH_STOCKS_PARSED_TO_SIGNAL:
-                    with self.lock:
-                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
-                    self.queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
-
-
-    def get_stocklist(self, stocklist: STOCKLISTS) -> None:
-        if stocklist == STOCKLISTS.Movers:
+    def get_stocklist(self, stocklist: stocklist_enum) -> None:
+        if stocklist == stocklist_enum.Movers:
             self.stocklists[stocklist] = self.get_most_active_with_positive_change()
-        elif stocklist == STOCKLISTS.CompanyInfo:
+        elif stocklist == stocklist_enum.CompanyInfo:
             self.stocklists[stocklist] = self.get_monthly_sentiment_data_from_sentdex()
-        elif stocklist == STOCKLISTS.TwitterBullBear:
+        elif stocklist == stocklist_enum.TwitterBullBear:
             self.stocklists[stocklist] = self.get_bull_bear_data_from_twitter()
-        elif stocklist == STOCKLISTS.TwitterMomentum:
+        elif stocklist == stocklist_enum.TwitterMomentum:
             self.stocklists[stocklist] = self.get_twitter_momentum_score()
-
-
-    def gather_data(self) -> None:
-        try:
-            if not DATA_FOLDER.exists():
-                with self.lock:
-                    Path.mkdir(DATA_FOLDER)
-
-            if not any(Path(DATA_FOLDER).iterdir()):
-                with self.lock:
-                    for stocklist in STOCKLISTS:
-                        self.get_stocklist(stocklist)
-
-                    set_common_dataframe_columns(self.stocklists)
-
-                    for stocklist in STOCKLISTS:
-                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
-            else:
-                self.read_data()
-        except Exception as e:
-            print("{} Failed to gather data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
 
 
     def read_data(self) -> None:
