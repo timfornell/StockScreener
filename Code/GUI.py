@@ -10,8 +10,10 @@ from Definitions import GUI_MESSAGE_HEADER
 
 class GUI(Frame):
     def __init__(self, root, event, lock, queue):
-        self.data_interface = DataInterface(event, lock, queue)
-        print("{} Data interface has finished: {}, starting GUI!".format(GUI_MESSAGE_HEADER, event.is_set()))
+        print("{} GUI is waiting for data gatherer...".format(GUI_MESSAGE_HEADER))
+        event.wait()
+        print("{} Data gatherer has finished: {}, starting GUI!".format(GUI_MESSAGE_HEADER, event.is_set()))
+        self.data_interface = DataInterface(lock, queue)
         self.id = 0
         self.num_stocks = "10"
         self.root = root
@@ -94,7 +96,7 @@ class GUI(Frame):
         # Bind keys to functions
         self.root.bind("<Return>", self.enter_key_callback)
 
-        self.update_stocklist(initialize=True)
+        self.data_interface.set_working_stocklist(self.num_stocks)
 
 
     def mouse_click(self, event):
@@ -179,5 +181,4 @@ class GUI(Frame):
     def check_for_new_data(self) -> None:
         print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
         self.data_interface.update_stocklist()
-        self.data_interface.set_working_stocklist(self.num_stocks)
         self.root.after(5000, self.check_for_new_data)

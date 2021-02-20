@@ -6,6 +6,7 @@ import pandas_datareader as web
 import requests
 import yahoo_fin.stock_info as ya
 import multiprocessing as mp
+import time
 
 from alpha_vantage.sectorperformance import SectorPerformances
 from alpha_vantage.techindicators import TechIndicators
@@ -14,16 +15,17 @@ from bs4 import BeautifulSoup
 from typing import List, Tuple
 from pathlib import Path
 from datetime import date
+from queue import Empty
 
-from DataFormatingCommon import read_data_from_files_to_dict, set_common_dataframe_columns
-from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_PARSED_TO_SIGNAL, stocklist_enum
+from DataCommon import DataCommon
+from Definitions import *
 
 
-class DataGatherer():
+class DataGatherer(DataCommon):
     def __init__(self, lock: mp.Lock, queue: mp.Queue):
-        self.lock = lock
-        self.queue = queue
-        self.stocklists = {key: pd.DataFrame() for key in stocklist_enum}
+        super().__init__(lock, queue)
+        self.updated_stocks = 0
+        self.updated_stocks_df = pd.DataFrame()
 
 
     def gather_data(self) -> None:
@@ -34,42 +36,62 @@ class DataGatherer():
 
             if not any(Path(DATA_FOLDER).iterdir()):
                 with self.lock:
+                    stock_dict = {}
                     for stocklist in stocklist_enum:
-                        self.get_stocklist(stocklist)
+                        stock_dict[stocklist] = self.get_stocklist(stocklist)
 
-                    set_common_dataframe_columns(self.stocklists)
+                    stock_df = self.merge_stocklists(stock_dict)
+                    self.write_data(stock_df)
 
-                    for stocklist in stocklist_enum:
-                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
-            else:
-                self.read_data()
         except Exception as e:
             print("{} Failed to gather data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))
 
 
-    def update_stocks_with_missing_data(self) -> None:
+    def merge_stocklists(self, stocklists: dict) -> pd.DataFrame:
+        stock_df = pd.DataFrame()
         for stocklist in stocklist_enum:
-            for i, stock in self.stocklists[stocklist].iterrows():
-                if stock["Name"] is np.nan and stock["Symbol"] != "SP500":
-                    stock_name = self.get_stock_info(stock["Symbol"])
-                    if stock_name is not np.nan:
-                        self.stocklists[stocklist].loc[i, "Name"] = stock_name
-                    else:
-                        self.stocklists[stocklist] = self.stocklists[stocklist].drop([i], axis=0)
-                        continue
+            if not stock_df.empty:
+                stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
+            else:
+                stock_df = stocklists[stocklist]
 
-                # sentiment_data = get_sentiment_data(stock["Name"])
-                twitter_momentum = self.get_twitter_data(stock["Symbol"], self.stocklists[stocklist].loc[i, "Name"])
-                self.stocklists[stocklist].loc[i, "Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
-                self.stocklists[stocklist].loc[i, "Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
+        stock_df["Sector"] = stock_df["Sector_x"].combine_first(stock_df["Sector_y"])
+        stock_df = stock_df.drop(["Sector_x", "Sector_y"], axis=1)
+        stock_df["Industry"] = stock_df["Industry_x"].combine_first(stock_df["Industry_y"])
+        stock_df = stock_df.drop(["Industry_x", "Industry_y"], axis=1)
+        stock_df.drop(['Market Cap'], axis=1, inplace=True)
+        return stock_df
+
+
+    def update_stocks_with_missing_data(self) -> None:
+        try:
+            message = self.queue.get().split()
+
+            if DATA_GATHERER_MESSAGE_HEADER in message:
+                self.updated_stocks += 1
+                stock_data = pd.DataFrame()
+                stock_symbol = message[STOCK_SYMBOL_POSITION]
+                stock_name = self.get_stock_info(stock_symbol)
+                columns_with_missing_data = message[STOCK_SYMBOL_POSITION + 1::]
+
+                if set(["Twit_1d_Mom", "Twit_7d_Mom"]).intersection(set(columns_with_missing_data)):
+                        twitter_momentum = self.get_twitter_data(stock_symbol, stock_name)
+                        stock_data.loc["Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
+                        stock_data.loc["Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
+
                 print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
-                                                                self.stocklists[stocklist].loc[i, "Name"],
-                                                                stock["Symbol"]))
+                                                                stock_data["Name"],
+                                                                stock_symbol))
 
-                if i % ENOUGH_STOCKS_PARSED_TO_SIGNAL:
+                if self.updated_stocks % ENOUGH_STOCKS_UPDATED_TO_SIGNAL:
                     with self.lock:
-                        self.stocklists[stocklist].to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(stocklist.name)))
+                        self.update_data(self.updated_stocks)
+                        self.updated_stocks = pd.DataFrame
+
                     self.queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
+        except Empty:
+            print("{} No message available in queue.".format(DATA_GATHERER_MESSAGE_HEADER))
+            time.sleep(1) # Just to not spam the terminal
 
 
     def get_most_active_with_positive_change(self) -> list:
@@ -108,9 +130,9 @@ class DataGatherer():
                     print("{} No data found, continue with next ticker.".format(DATA_GATHERER_MESSAGE_HEADER))
 
         company_info = pd.DataFrame(data={'Symbol': ticker_name,
-                                        'Sentiment': sentiment,
-                                        'Direction': sentiment_trend,
-                                        'Mentions':mentions})
+                                          'Sentiment': sentiment,
+                                          'Direction': sentiment_trend,
+                                          'Mentions':mentions})
 
         company_info["Mentions"] = company_info["Mentions"].replace(",", "", regex=True)
         company_info["Mentions"] = pd.to_numeric(company_info["Mentions"])
@@ -209,27 +231,22 @@ class DataGatherer():
             soup = BeautifulSoup(yahoo_data.text, "html.parser")
             stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text
         except:
-            print("{} Something went wrong when parsin name for ticker {}.".format(DATA_GATHERER_MESSAGE_HEADER, symbol))
+            print("{} Something went wrong when parsing name for ticker {}.".format(DATA_GATHERER_MESSAGE_HEADER, symbol))
 
         return stock_name
 
 
-    def get_stocklist(self, stocklist: stocklist_enum) -> None:
+    def get_stocklist(self, stocklist: stocklist_enum) -> pd.DataFrame:
+        stocks_df = pd.DataFrame()
+
         if stocklist == stocklist_enum.Movers:
-            self.stocklists[stocklist] = self.get_most_active_with_positive_change()
+            stocks_df = self.get_most_active_with_positive_change()
         elif stocklist == stocklist_enum.CompanyInfo:
-            self.stocklists[stocklist] = self.get_monthly_sentiment_data_from_sentdex()
+            stocks_df = self.get_monthly_sentiment_data_from_sentdex()
         elif stocklist == stocklist_enum.TwitterBullBear:
-            self.stocklists[stocklist] = self.get_bull_bear_data_from_twitter()
+            stocks_df = self.get_bull_bear_data_from_twitter()
         elif stocklist == stocklist_enum.TwitterMomentum:
-            self.stocklists[stocklist] = self.get_twitter_momentum_score()
+            stocks_df = self.get_twitter_momentum_score()
 
+        return stocks_df
 
-    def read_data(self) -> None:
-        try:
-            with self.lock:
-                print("{} Reading data...".format(DATA_GATHERER_MESSAGE_HEADER))
-                self.stocklists = read_data_from_files_to_dict()
-                print("{} Finished reading data".format(DATA_GATHERER_MESSAGE_HEADER))
-        except Exception as e:
-            print("{} Failed to read data, got {}".format(DATA_GATHERER_MESSAGE_HEADER, e))

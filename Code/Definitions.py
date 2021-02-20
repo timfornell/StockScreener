@@ -3,9 +3,12 @@ from pathlib import Path
 from enum import Enum
 
 DATA_FOLDER = Path("Database/{}".format(date.today()))
+STOCKLIST_PICKLE_FILE = "CompleteStocklist"
 DATA_INTERFACE_MESSAGE_HEADER = "@DI:"
 DATA_GATHERER_MESSAGE_HEADER = "@DG:"
 GUI_MESSAGE_HEADER = "@GUI:"
+
+STOCK_SYMBOL_POSITION = 1
 
 # Stocklist definitions
 stocklist_enum = Enum("Stocklists",
@@ -14,4 +17,4 @@ stocklist_enum = Enum("Stocklists",
                  "TwitterBullBear " +
                  "TwitterMomentum")
 
-ENOUGH_STOCKS_PARSED_TO_SIGNAL = 2
+ENOUGH_STOCKS_UPDATED_TO_SIGNAL = 2

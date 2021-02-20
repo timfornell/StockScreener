@@ -13,8 +13,8 @@ class DataInterface{
     -Event event
 
     update_stockslist(initialize: bool)
-    get_stocklist(): DataFrame
-    get_working_stocklist(): DataFrame
+    get_stocklist() DataFrame
+    get_working_stocklist() DataFrame
     set_working_stocklist(num_stocks: str)
     sort_working_stocklist(sort_variable: str, sort_direction: bool)
 }
@@ -45,5 +45,3 @@ class stocklist_enum{
 
 DataCommon --|> DataInterface : Inheritance
 DataCommon --|> DataGatherer : Inheritance
-
-
