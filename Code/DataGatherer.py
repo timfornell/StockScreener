@@ -55,11 +55,15 @@ class DataGatherer(DataCommon):
             else:
                 stock_df = stocklists[stocklist]
 
+        # Make the stocklist a bit more nicer
         stock_df["Sector"] = stock_df["Sector_x"].combine_first(stock_df["Sector_y"])
         stock_df = stock_df.drop(["Sector_x", "Sector_y"], axis=1)
         stock_df["Industry"] = stock_df["Industry_x"].combine_first(stock_df["Industry_y"])
         stock_df = stock_df.drop(["Industry_x", "Industry_y"], axis=1)
         stock_df.drop(['Market Cap'], axis=1, inplace=True)
+        stock_df["Volume"] = stock_df["Volume"].apply(lambda x: int(x))
+        stock_df["Avg Vol (3 month)"] = stock_df["Avg Vol (3 month)"].apply(lambda x: int(x))
+
         return stock_df
 
 

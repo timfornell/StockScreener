@@ -97,6 +97,7 @@ class GUI(Frame):
         self.root.bind("<Return>", self.enter_key_callback)
 
         self.data_interface.set_working_stocklist(self.num_stocks)
+        self.initialize_stocklist()
 
 
     def mouse_click(self, event):
@@ -141,21 +142,31 @@ class GUI(Frame):
                 self.sort_var.set(selection)
 
 
-    def update_stocklist(self, initialize=False, sorting=False) -> None:
-        if not initialize and not sorting:
+    def initialize_stocklist(self) -> None:
+        print("{} Initialize stocklist to {} stocks.".format(GUI_MESSAGE_HEADER, self.num_stocks))
+        self.data_interface.set_working_stocklist(self.num_stocks)
+        self.clear_tree()
+        self.fill_tree()
+
+
+    def update_stocklist(self, sorting=False) -> None:
+        if not sorting:
             new_value = self.number_of_stocks_entry.get()
             old_value = self.num_stocks
 
-            if old_value == self.num_stocks:
+            if new_value == old_value:
                 return
             else:
-                self.data_interface.set_working_stocklist(new_value)
+                self.num_stocks = new_value
+                self.data_interface.set_working_stocklist(self.num_stocks)
 
-        if not sorting:
             print("{} Limit stocklist to {}.".format(GUI_MESSAGE_HEADER, self.num_stocks))
             self.data_interface.set_working_stocklist(self.num_stocks)
             self.clear_tree()
 
+        self.fill_tree()
+
+    def fill_tree(self) -> None:
         for i, stock in enumerate(self.data_interface.get_working_stocklist().iterrows()):
             self.insert_data(i, stock)
 
