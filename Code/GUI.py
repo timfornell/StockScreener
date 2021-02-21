@@ -19,7 +19,7 @@ class GUI(Frame):
         self.root = root
         self.initialize_user_interface()
         print("{} GUI has initialized!".format(GUI_MESSAGE_HEADER))
-        self.root.after(5000, self.check_for_new_data)
+        self.root.after(100, self.check_for_new_data)
 
 
     def initialize_user_interface(self) -> None:
@@ -192,4 +192,4 @@ class GUI(Frame):
     def check_for_new_data(self) -> None:
         print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
         self.data_interface.update_stocklist()
-        self.root.after(5000, self.check_for_new_data)
+        self.root.after(500, self.check_for_new_data)

@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from DataCommon import DataCommon
 
-from Definitions import DATA_FOLDER, DATA_INTERFACE_MESSAGE_HEADER, stocklist_enum
+from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_UPDATED_TO_SIGNAL, stocklist_enum
 
 class DataInterface(DataCommon):
     def __init__(self, lock: mp.Lock, queue: mp.Queue):
@@ -28,11 +28,11 @@ class DataInterface(DataCommon):
     def update_stocklist(self) -> None:
         if self.waiting_for_new_data:
             try:
-                # if not initialize:
                 message = self.queue.get()
                 print("{} Read message '{}'".format(DATA_INTERFACE_MESSAGE_HEADER, message))
 
                 if DATA_INTERFACE_MESSAGE_HEADER in message:
+                    self.waiting_for_new_data = False
                     print("{} Update stocklist!".format(DATA_INTERFACE_MESSAGE_HEADER))
                     with self.lock:
                         self.stocklist = self.read_data()
@@ -47,8 +47,18 @@ class DataInterface(DataCommon):
 
 
     def fill_queue_with_stocks_to_update(self) -> None:
-        pass
+        self.waiting_for_new_data = True
+        for i, stock in enumerate(self.stocklist.iterrows()):
+            null_values = stock[1].isnull()
+            if null_values.values.any() and stock[1]["Symbol"]:
+                null_columns = [col for col, is_null in null_values.iteritems() if is_null]
+                message = "{} UPDATE {}".format(DATA_GATHERER_MESSAGE_HEADER, stock[1]["Symbol"])
+                message += ">{}".format(";".join(null_columns))
+                print("{} Putting {} in queue.".format(DATA_INTERFACE_MESSAGE_HEADER, message))
+                self.queue.put(message)
 
+            if (i + 1) % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0:
+                break
 
     def get_stocklist(self) -> pd.DataFrame:
         return self.stocklist

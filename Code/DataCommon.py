@@ -39,7 +39,8 @@ class DataCommon():
     def update_data(self, updated_stock_df: pd.DataFrame) -> None:
         try:
             stock_df = self.read_data()
-            stock_df = stock_df.merge(updated_stock_df, on="Symbol", how="outer")
+            # MERGING DOESN'T WORK
+            # stock_df = stock_df.merge(updated_stock_df, how="left")
             self.write_data(stock_df)
         except Exception as e:
             print("{} Failed to update data, got {}".format(DATA_INTERFACE_MESSAGE_HEADER, e))

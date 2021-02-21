@@ -27,8 +27,6 @@ def run_data_gatherer(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
         data_gatherer.update_stocks_with_missing_data()
 
 
-
-
 if __name__ == "__main__":
     # Workaround to fix multiprocessing in a venv
     # https://stackoverflow.com/questions/54480527/multiprocessing-asyncresult-get-hangs-in-python-3-7-2-but-not-in-3-6

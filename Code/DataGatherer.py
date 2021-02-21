@@ -6,6 +6,7 @@ import pandas_datareader as web
 import requests
 import yahoo_fin.stock_info as ya
 import multiprocessing as mp
+import math
 import time
 
 from alpha_vantage.sectorperformance import SectorPerformances
@@ -34,7 +35,7 @@ class DataGatherer(DataCommon):
                 with self.lock:
                     Path.mkdir(DATA_FOLDER)
 
-            if not any(Path(DATA_FOLDER).iterdir()):
+            if True or not any(Path(DATA_FOLDER).iterdir()):
                 with self.lock:
                     stock_dict = {}
                     for stocklist in stocklist_enum:
@@ -61,36 +62,46 @@ class DataGatherer(DataCommon):
         stock_df["Industry"] = stock_df["Industry_x"].combine_first(stock_df["Industry_y"])
         stock_df = stock_df.drop(["Industry_x", "Industry_y"], axis=1)
         stock_df.drop(['Market Cap'], axis=1, inplace=True)
-        stock_df["Volume"] = stock_df["Volume"].apply(lambda x: int(x))
-        stock_df["Avg Vol (3 month)"] = stock_df["Avg Vol (3 month)"].apply(lambda x: int(x))
+        stock_df["Volume"] = stock_df["Volume"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
+        stock_df["Avg Vol (3 month)"] = stock_df["Avg Vol (3 month)"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
 
         return stock_df
 
 
     def update_stocks_with_missing_data(self) -> None:
         try:
-            message = self.queue.get().split()
+            message = self.queue.get().split(">")
+            command = message[0].split()
+            columns_with_missing_data = message[-1].split(";")
 
-            if DATA_GATHERER_MESSAGE_HEADER in message:
+            if DATA_GATHERER_MESSAGE_HEADER in command and "UPDATE" in command:
                 self.updated_stocks += 1
-                stock_data = pd.DataFrame()
-                stock_symbol = message[STOCK_SYMBOL_POSITION]
+                stock_symbol = command[STOCK_SYMBOL_POSITION]
                 stock_name = self.get_stock_info(stock_symbol)
-                columns_with_missing_data = message[STOCK_SYMBOL_POSITION + 1::]
+                stock_data = pd.DataFrame(columns=columns_with_missing_data)
+                stock_data.loc[0, "Symbol"] = stock_symbol
 
                 if set(["Twit_1d_Mom", "Twit_7d_Mom"]).intersection(set(columns_with_missing_data)):
-                        twitter_momentum = self.get_twitter_data(stock_symbol, stock_name)
-                        stock_data.loc["Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
-                        stock_data.loc["Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
+                        success, twitter_momentum = self.get_twitter_data(stock_symbol, stock_name)
+                        if success:
+                            stock_data["Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
+                            stock_data["Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
 
-                print("{} Finished with {} ({}), {}/{}".format(DATA_GATHERER_MESSAGE_HEADER,
-                                                                stock_data["Name"],
-                                                                stock_symbol))
+                print("{} Finished with {} ({})".format(DATA_GATHERER_MESSAGE_HEADER,
+                                                        stock_name,
+                                                        stock_symbol))
 
-                if self.updated_stocks % ENOUGH_STOCKS_UPDATED_TO_SIGNAL:
+                if self.updated_stocks % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0:
                     with self.lock:
-                        self.update_data(self.updated_stocks)
-                        self.updated_stocks = pd.DataFrame
+                        self.update_data(self.updated_stocks_df)
+                        self.updated_stocks = pd.DataFrame()
+                else:
+                    if not self.updated_stocks_df.empty:
+                        # Make sure they have the same columns before concatenating
+                        stock_data = stock_data.merge(self.updated_stocks_df, how="left")
+                        self.updated_stocks_df = pd.concat([self.updated_stocks_df, stock_data])
+                    else:
+                        self.updated_stocks_df = stock_data
 
                     self.queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
         except Empty:
@@ -208,11 +219,12 @@ class DataGatherer(DataCommon):
         return twitter_momentum
 
 
-    def get_twitter_data(self, symbol: str, name: str) -> dict:
+    def get_twitter_data(self, symbol: str, name: str) -> Tuple[bool, dict]:
         momentum_data = requests.get("https://www.tradefollowers.com/stock/stock_list.jsp?s={}".format(name))
         soup = BeautifulSoup(momentum_data.text, "html.parser")
         table = soup.find_all('tr')
         data = {"Twit_1d_Mom": np.nan, "Twit_7d_Mom": np.nan}
+        success = False
 
         for stock in table:
             stock_info = stock.find_all("td", {"class": "datalistcolumn"})
@@ -223,9 +235,10 @@ class DataGatherer(DataCommon):
                     seven_day_momentum = float(stock_info[5].get_text().strip())
                     data["Twit_1d_Mom"] = daily_momentum
                     data["Twit_7d_Mom"] = seven_day_momentum
+                    success = True
                     break
 
-        return data
+        return success, data
 
 
     def get_stock_info(self, symbol: str) -> str:
@@ -233,7 +246,7 @@ class DataGatherer(DataCommon):
         try:
             yahoo_data = requests.get("https://finance.yahoo.com/quote/{}".format(symbol))
             soup = BeautifulSoup(yahoo_data.text, "html.parser")
-            stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text
+            stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text.split("(")[0].rstrip()
         except:
             print("{} Something went wrong when parsing name for ticker {}.".format(DATA_GATHERER_MESSAGE_HEADER, symbol))
 
