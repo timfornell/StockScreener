@@ -166,6 +166,7 @@ class GUI(Frame):
 
         self.fill_tree()
 
+
     def fill_tree(self) -> None:
         for i, stock in enumerate(self.data_interface.get_working_stocklist().iterrows()):
             self.insert_data(i, stock)
@@ -190,6 +191,9 @@ class GUI(Frame):
 
 
     def check_for_new_data(self) -> None:
-        print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
-        self.data_interface.update_stocklist()
+        # print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
+        if self.data_interface.update_stocklist():
+            # This should not be forced, a button sould appear if this returns true
+            self.sort_stocklist()
+
         self.root.after(500, self.check_for_new_data)

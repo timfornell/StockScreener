@@ -35,7 +35,7 @@ class DataGatherer(DataCommon):
                 with self.lock:
                     Path.mkdir(DATA_FOLDER)
 
-            if True or not any(Path(DATA_FOLDER).iterdir()):
+            if not any(Path(DATA_FOLDER).iterdir()):
                 with self.lock:
                     stock_dict = {}
                     for stocklist in stocklist_enum:
@@ -64,26 +64,31 @@ class DataGatherer(DataCommon):
         stock_df.drop(['Market Cap'], axis=1, inplace=True)
         stock_df["Volume"] = stock_df["Volume"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
         stock_df["Avg Vol (3 month)"] = stock_df["Avg Vol (3 month)"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
+        # This column is added to indicate if a stock has attempted to be updated at some point
+        stock_df["Updated"] = False
 
         return stock_df
 
 
     def update_stocks_with_missing_data(self) -> None:
         try:
-            message = self.queue.get().split(">")
+            message = self.queue[DATA_GATHERER_MESSAGE_HEADER].get_nowait().split(">")
             command = message[0].split()
             columns_with_missing_data = message[-1].split(";")
 
-            if DATA_GATHERER_MESSAGE_HEADER in command and "UPDATE" in command:
+            if "UPDATE" in command[0]:
                 self.updated_stocks += 1
                 stock_symbol = command[STOCK_SYMBOL_POSITION]
                 stock_name = self.get_stock_info(stock_symbol)
                 stock_data = pd.DataFrame(columns=columns_with_missing_data)
                 stock_data.loc[0, "Symbol"] = stock_symbol
+                stock_data["Updated"] = True
+                stock_data["Name"] = stock_name
 
-                if set(["Twit_1d_Mom", "Twit_7d_Mom"]).intersection(set(columns_with_missing_data)):
+                if set(["Twit_1d_Mom", "Twit_7d_Mom"]).intersection(set(columns_with_missing_data)) and stock_name:
                         success, twitter_momentum = self.get_twitter_data(stock_symbol, stock_name)
                         if success:
+                            print("{} Found twitter data for {}!".format(DATA_GATHERER_MESSAGE_HEADER, stock_name))
                             stock_data["Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
                             stock_data["Twit_7d_Mom"] = twitter_momentum["Twit_7d_Mom"]
 
@@ -91,22 +96,22 @@ class DataGatherer(DataCommon):
                                                         stock_name,
                                                         stock_symbol))
 
-                if self.updated_stocks % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0:
+                if not self.updated_stocks_df.empty:
+                    # Make sure they have the same columns before concatenating
+                    stock_data = stock_data.merge(self.updated_stocks_df, how="left")
+                    self.updated_stocks_df = pd.concat([self.updated_stocks_df, stock_data])
+                else:
+                    self.updated_stocks_df = stock_data
+
+                if self.updated_stocks % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0 or "FINAL" in command[0]:
                     with self.lock:
                         self.update_data(self.updated_stocks_df)
-                        self.updated_stocks = pd.DataFrame()
-                else:
-                    if not self.updated_stocks_df.empty:
-                        # Make sure they have the same columns before concatenating
-                        stock_data = stock_data.merge(self.updated_stocks_df, how="left")
-                        self.updated_stocks_df = pd.concat([self.updated_stocks_df, stock_data])
-                    else:
-                        self.updated_stocks_df = stock_data
+                        self.queue[DATA_INTERFACE_MESSAGE_HEADER].put("NEW_DATA")
+                        self.updated_stocks_df = pd.DataFrame()
 
-                    self.queue.put("{} NEW_DATA".format(DATA_INTERFACE_MESSAGE_HEADER))
         except Empty:
-            print("{} No message available in queue.".format(DATA_GATHERER_MESSAGE_HEADER))
-            time.sleep(1) # Just to not spam the terminal
+            # print("{} No message available in queue.".format(DATA_GATHERER_MESSAGE_HEADER))
+            pass
 
 
     def get_most_active_with_positive_change(self) -> list:
@@ -242,7 +247,7 @@ class DataGatherer(DataCommon):
 
 
     def get_stock_info(self, symbol: str) -> str:
-        stock_name = np.nan
+        stock_name = ""
         try:
             yahoo_data = requests.get("https://finance.yahoo.com/quote/{}".format(symbol))
             soup = BeautifulSoup(yahoo_data.text, "html.parser")

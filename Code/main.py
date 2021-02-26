@@ -40,7 +40,9 @@ if __name__ == "__main__":
     # The lock is intended to protect the DataInterface object to be accessed at the same time
     lock = mp.Lock()
     # The queue is intended to be used to signal the data interface when new data can be read
-    queue = mp.Queue()
+    dg_queue = mp.Queue()
+    di_queue = mp.Queue()
+    queue = {DATA_GATHERER_MESSAGE_HEADER: dg_queue, DATA_INTERFACE_MESSAGE_HEADER: di_queue}
 
     data_if_proc = mp.Process(name="Data_Interface", target=run_data_interface, args=(event, lock, queue))
     data_if_proc.start()

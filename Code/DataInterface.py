@@ -14,6 +14,8 @@ class DataInterface(DataCommon):
         self.stocklist = pd.DataFrame()
         self.working_stocklist = pd.DataFrame()
         self.waiting_for_new_data = False
+        self.num_stocks_requested_to_update = 0
+        self.next_stock_to_request = 0
 
         print("{} Update stocklist.".format(DATA_INTERFACE_MESSAGE_HEADER))
         self.initialize_stocklist()
@@ -25,40 +27,55 @@ class DataInterface(DataCommon):
             self.working_stocklist = self.stocklist.head()
 
 
-    def update_stocklist(self) -> None:
+    def update_stocklist(self) -> bool:
+        update_treeview = False
         if self.waiting_for_new_data:
             try:
-                message = self.queue.get()
-                print("{} Read message '{}'".format(DATA_INTERFACE_MESSAGE_HEADER, message))
+                message = self.queue[DATA_INTERFACE_MESSAGE_HEADER].get_nowait()
+                # print("{} Read message '{}'".format(DATA_INTERFACE_MESSAGE_HEADER, message))
 
-                if DATA_INTERFACE_MESSAGE_HEADER in message:
+                if "NEW_DATA" in message:
                     self.waiting_for_new_data = False
                     print("{} Update stocklist!".format(DATA_INTERFACE_MESSAGE_HEADER))
                     with self.lock:
                         self.stocklist = self.read_data()
-                        self.working_stocklist = self.stocklist.head()
+                        # The working stocklist should still be the same size
+                        self.working_stocklist = self.stocklist.head(len(self.working_stocklist.index))
+                        update_treeview = True
             except Empty:
-                print("{} No message found, sleeping...".format(DATA_INTERFACE_MESSAGE_HEADER))
-                time.sleep(2)
+                pass
+                # print("{} No message found, sleeping...".format(DATA_INTERFACE_MESSAGE_HEADER))
             except Exception as e:
-                print("{} Something went wrong, got: {}".format(DATA_INTERFACE_MESSAGE_HEADER, e))
+                pass
+                # print("{} Something went wrong, got: {}".format(DATA_INTERFACE_MESSAGE_HEADER, e))
         else:
             self.fill_queue_with_stocks_to_update()
+
+        return update_treeview
 
 
     def fill_queue_with_stocks_to_update(self) -> None:
         self.waiting_for_new_data = True
-        for i, stock in enumerate(self.stocklist.iterrows()):
+        for i, stock in enumerate(self.stocklist[self.next_stock_to_request::].iterrows()):
             null_values = stock[1].isnull()
-            if null_values.values.any() and stock[1]["Symbol"]:
-                null_columns = [col for col, is_null in null_values.iteritems() if is_null]
-                message = "{} UPDATE {}".format(DATA_GATHERER_MESSAGE_HEADER, stock[1]["Symbol"])
-                message += ">{}".format(";".join(null_columns))
-                print("{} Putting {} in queue.".format(DATA_INTERFACE_MESSAGE_HEADER, message))
-                self.queue.put(message)
 
-            if (i + 1) % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0:
+            if self.num_stocks_requested_to_update % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0 and self.num_stocks_requested_to_update > 0:
+                self.next_stock_to_request = i
+                self.num_stocks_requested_to_update = 0
                 break
+            elif null_values.values.any() and stock[1]["Symbol"] and not stock[1]["Updated"]:
+                null_columns = [col for col, is_null in null_values.iteritems() if is_null]
+                message = "UPDATE {}".format(stock[1]["Symbol"])
+
+                # The number of stocks isn't necesarily evenly dividable by ENOUGH_STOCKS_UPDATED_TO_SIGNAL
+                if i == len(self.stocklist.index) - 1:
+                    message = message.replace("UPDATE", "FINAL_UPDATE")
+
+                message += ">{}".format(";".join(null_columns))
+                print("{} Putting '{}' in queue.".format(DATA_INTERFACE_MESSAGE_HEADER, message))
+                self.queue[DATA_GATHERER_MESSAGE_HEADER].put(message)
+                self.num_stocks_requested_to_update += 1
+
 
     def get_stocklist(self) -> pd.DataFrame:
         return self.stocklist
