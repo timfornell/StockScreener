@@ -51,4 +51,6 @@ if __name__ == "__main__":
     data_gath_proc.start()
 
     data_if_proc.join()
-    data_gath_proc.join()
+
+    data_if_proc.kill()
+    data_gath_proc.kill()
