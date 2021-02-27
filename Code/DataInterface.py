@@ -39,8 +39,7 @@ class DataInterface(DataCommon):
                     print("{} Update stocklist!".format(DATA_INTERFACE_MESSAGE_HEADER))
                     with self.lock:
                         self.stocklist = self.read_data()
-                        # The working stocklist should still be the same size
-                        self.working_stocklist = self.stocklist.head(len(self.working_stocklist.index))
+                        # The working stocklist is not updated until specifically told so
                         update_treeview = True
             except Empty:
                 pass

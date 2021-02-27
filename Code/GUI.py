@@ -146,10 +146,11 @@ class GUI(Frame):
     def enter_key_callback(self, event):
         focused_widget = self.root.focus_get()
         if focused_widget is self.number_of_stocks_entry:
-            self.update_stocklist()
+            self.update_stocklist(callback=True)
 
 
     def refresh_stocklist_button_callback(self):
+        self.data_interface.set_working_stocklist(self.num_stocks)
         self.sort_stocklist()
         self.refresh_stocklist_button["state"] = DISABLED
 
@@ -185,8 +186,8 @@ class GUI(Frame):
         self.fill_tree()
 
 
-    def update_stocklist(self, sorting=False) -> None:
-        if not sorting:
+    def update_stocklist(self, callback=False) -> None:
+        if callback:
             new_value = self.number_of_stocks_entry.get()
             old_value = self.num_stocks
 
@@ -213,7 +214,7 @@ class GUI(Frame):
             self.clear_tree()
 
             # Draw new sorted stocklist
-            self.update_stocklist(sorting=True)
+            self.update_stocklist()
 
 
     def insert_data(self, id, stock) -> None:
