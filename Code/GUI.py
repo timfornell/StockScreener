@@ -5,7 +5,7 @@ from DataInterface import DataInterface
 from tkinter import *
 from tkinter import ttk
 
-from Definitions import GUI_MESSAGE_HEADER
+from Definitions import GUI_MESSAGE_HEADER, NUMBER_OF_OPTION_FRAMES
 
 
 class GUI(Frame):
@@ -32,46 +32,41 @@ class GUI(Frame):
 
         RootFrame (main window):
             OptionsFrame (TOP):
-                SortFrame (LEFT):
-                    SortKeyFrame (TOP):
-                        SortLabel (LEFT)
-                        SortKeyDropDownList (RIGHT)
-                    SortKeyButtonsFrame (BOTTOM):
-                        SortingDirectionButton (LEFT)
-                        SubmitSortingOptionsButton (RIGHT)
-                NumStocksFrame (RIGHT):
-                    NumStocksEntryFrame (TOP):
-                        NumberOfStocksLabel (LEFT)
-                        NumberOfStocksEntry (RIGHT)
-                    NumStocksApplyButton (BOTTOM)
+                SortFrame:
+                    SortLabel
+                    SortKeyDropDownList
+                    SortingDirectionButton
+                    SubmitSortingOptionsButton
+                NumStocksFrame:
+                    NumberOfStocksLabel
+                    NumberOfStocksEntry
+                    NumStocksApplyButton
             TreeFrame (BOTTOM):
-                ScrollFrame (LEFT):
-                    VerticalScrollBar (LEFT)
-                TreeView (RIGHT)
+                VerticalScrollBar
+                TreeView
         """
 
         # Define the different GUI widgets
         self.options_frame = Frame(self.root)
-        self.options_frame.pack(side=TOP)
+        self.options_frame.pack(side=TOP, fill="x")
 
-        self.sort_frame = Frame(self.options_frame)
+        self.option_frames = []
+        for i in range(NUMBER_OF_OPTION_FRAMES):
+            self.option_frames.append(Frame(self.options_frame))
+            self.option_frames[i].pack(side=LEFT, padx=10)
+
+        self.sort_frame = Frame(self.option_frames[0])
         self.sort_frame.pack(side=LEFT)
-        self.sort_key_frame = Frame(self.sort_frame)
-        self.sort_key_frame.pack(side=TOP)
-        self.sort_key_buttons = Frame(self.sort_frame)
-        self.sort_key_buttons.pack(side=BOTTOM)
 
-        self.num_stocks_frame = Frame(self.options_frame)
-        self.num_stocks_frame.pack(side=RIGHT, ipadx=30)
+        self.num_stocks_frame = Frame(self.option_frames[1])
+        self.num_stocks_frame.pack(side=LEFT)
 
-        self.num_stocks_entry_frame = Frame(self.num_stocks_frame)
-        self.num_stocks_entry_frame.pack(side=TOP)
+        for i in range(2, NUMBER_OF_OPTION_FRAMES):
+            label = Label(self.option_frames[i], text="Empty optionframe")
+            label.pack(side=LEFT)
 
         self.tree_frame = Frame(self.root)
         self.tree_frame.pack(side=BOTTOM, fill="both", expand=True)
-
-        self.scroll_frame = Frame(self.tree_frame)
-        self.scroll_frame.pack(side=LEFT, fill="y")
 
 
     def initialize_user_interface(self) -> None:
@@ -89,32 +84,36 @@ class GUI(Frame):
         self.intitialize_GUI_layout()
 
         # Sort options
-        self.sort_var = StringVar(self.sort_key_frame, value=self.sort_variable_string)
-        self.sort_label = Label(self.sort_key_frame, text="Sorting key:")
-        self.sort_key = OptionMenu(self.sort_key_frame, self.sort_var, *self.sort_options, command=self.set_sort_variable)
-        self.sort_label.pack(side=LEFT)
-        self.sort_key.pack(side=RIGHT)
+        self.sort_label = Label(self.sort_frame, text="Sorting Options:")
+        self.sort_label.pack(side=TOP)
+        self.sort_var = StringVar(self.sort_frame, value=self.sort_variable_string)
+        self.sort_key = OptionMenu(self.sort_frame, self.sort_var, *self.sort_options, command=self.set_sort_variable)
+        self.sort_key.pack(side=LEFT)
 
-        self.submit_sorting_option = Button(self.sort_key_buttons, text="Apply sorting", command=self.sort_stocklist)
-        self.sorting_direction_button = Button(self.sort_key_buttons,
+        self.submit_sorting_option = Button(self.sort_frame, text="Apply sorting", command=self.sort_stocklist)
+        self.sorting_direction_button = Button(self.sort_frame,
                                                 text="Direction: {}".format(self.get_sort_direction()),
                                                                             command=self.change_sort_direction)
-        self.submit_sorting_option.pack(side=RIGHT)
+        self.submit_sorting_option.pack(side=LEFT)
         self.sorting_direction_button.pack(side=LEFT)
 
         # Number of stocks to display
-        self.number_of_stocks_label = Label(self.num_stocks_entry_frame, text="Number of stocks to show:")
-        self.number_of_stocks_entry = Entry(self.num_stocks_entry_frame)
-        self.number_of_stocks_label.pack(side=LEFT)
-        self.number_of_stocks_entry.pack(side=RIGHT)
-
+        self.number_of_stocks_label = Label(self.num_stocks_frame, text="Number of stocks to show:")
+        self.number_of_stocks_label.pack(side=TOP)
+        self.number_of_stocks_entry = Entry(self.num_stocks_frame)
+        self.number_of_stocks_entry.pack(side=LEFT)
         self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply", command=self.update_stocklist)
-        self.submit_number_of_stocks.pack(side=BOTTOM)
+        self.submit_number_of_stocks.pack(side=LEFT)
 
         # Setup treeview
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
         self.tree.bind("<Button-1>", self.mouse_click)
-        self.tree.pack(side=RIGHT, fill="both", expand=True)
+
+        self.vert_scrollbar = Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=self.vert_scrollbar.set)
+
+        self.vert_scrollbar.pack(side=LEFT, fill="y", anchor=W)
+        self.tree.pack(side=LEFT, fill="both", expand=True)
 
         for i, col in enumerate(self.sort_options):
             self.tree.heading("{}".format(i), text=col)
@@ -123,9 +122,6 @@ class GUI(Frame):
         self.tree["show"] = "headings"
         self.treeview = self.tree
 
-        self.vert_scrollbar = Scrollbar(self.scroll_frame, orient="vertical", command=self.tree.yview)
-        self.vert_scrollbar.pack(side=LEFT, fill="y", anchor=W)
-        self.tree.configure(yscrollcommand=self.vert_scrollbar.set)
 
         # Bind keys to functions
         self.root.bind("<Return>", self.enter_key_callback)

@@ -19,3 +19,6 @@ stocklist_enum = Enum("Stocklists",
                  "TwitterMomentum")
 
 ENOUGH_STOCKS_UPDATED_TO_SIGNAL = 5
+
+# GUI Definitions
+NUMBER_OF_OPTION_FRAMES = 10
