@@ -23,13 +23,52 @@ from Definitions import *
 
 
 class DataGatherer(DataCommon):
+    """ This class is used to gather all stockdata that might be of interest.
+    Description
+    -----------
+    Upon initialization it takes in a lock and a queue. The lock is used to access the files where data is stored
+    while the queue is used to know when to gather data and to signal when new data is available.
+
+    The intention is that this class communicates with the class DataInterface (which in turn is controlled by
+    the GUI class) via the queue. The DataInterface puts stocks and which attrubutes it wants more information on
+    in the queue and this class continuously checks the queue for new stocks. To not fill the queue with to much
+    the variable ENOUGH_STOCKS_UPDATED_TO_SIGNAL determines how many stocks the DataInterface can request at a time.
+    E.g. if ENOUGH_STOCKS_UPDATED_TO_SIGNAL = 5 then DataInterface can at most put 5 stocks at a time in the queue
+    and it won't be able to put anymore stocks in there until the DataGatherer has signaled that it has handled
+    those 5.
+
+    Attributes
+    ----------
+    updated_stocks : int
+        An int intended to keep track of the number of stocks that have been updated
+    updated_stocks_df : pd.DataFrame
+        A dataframe where stocks that have been updated are stored
+    lock : multiprocessing.Lock
+        A lock that is used to ensure exclusive access to the datafile
+    queue : doct{multiprocessing.Queue, multiprocessing.Queue}
+        A dict containgin two queue's that is used to communicate with DataInterface
+
+    """
+
     def __init__(self, lock: mp.Lock, queue: mp.Queue):
         super().__init__(lock, queue)
         self.updated_stocks = 0
         self.updated_stocks_df = pd.DataFrame()
+        self.lock = lock
+        self.queue = queue
 
 
-    def gather_data(self) -> None:
+    def gather_new_data(self) -> None:
+        """ Gathers new data
+
+        Description
+        -----------
+        This is the function that is called upon startup. If the file with all stock information has already been
+        created, this functions does nothing. If it doesn't exist it will loop through the Enum 'stocklist_enum'
+        and call 'get_stocklist' for each enum to build up a dict (where the keys are defined by the enum values)
+        to save.
+        """
+
         try:
             if not DATA_FOLDER.exists():
                 with self.lock:
@@ -49,6 +88,25 @@ class DataGatherer(DataCommon):
 
 
     def merge_stocklists(self, stocklists: dict) -> pd.DataFrame:
+        """ Merges output data gathered by gather_new_data
+
+            Description
+            -----------
+            This function is called when new data has been gathered by 'gather_new_data'. This function loops through
+            the provided dict and merges all these individual stocklists and merges them into one single dataframe.
+            It also removes/adds some columns that is or is not of interest.
+
+            Parameters
+            ----------
+            stocklists : dict
+                A dict containing all individual stocklists to merge
+
+            Returns
+            -------
+            pandas.DataFrame
+                A dataframe where all information from the dict has been merged together
+        """
+
         stock_df = pd.DataFrame()
         for stocklist in stocklist_enum:
             if not stock_df.empty:
@@ -71,7 +129,20 @@ class DataGatherer(DataCommon):
 
 
     def update_stocks_with_missing_data(self) -> None:
+        """ Update stocks that have missing data
+
+        Description
+        -----------
+        After the DataGatherer has initialized and called 'gather_new_data' this function will get called. This function
+        checks the queue to see if there is a message available, if there is a message available it will determine if
+        it contains something it can act upon. If the messsage contains a 'UPDATE' message together with a stock symbol
+        and columns with missing data it will try to gather this data. The columns with missing data is parsed to
+        determine which data to try and gather, if the data isn't found the stock will still be marked as 'updated' to
+        indicate that it has been looked at.
+        """
+
         try:
+            # Check if there is a message available in the queue
             message = self.queue[DATA_GATHERER_MESSAGE_HEADER].get_nowait().split(">")
             command = message[0].split()
             columns_with_missing_data = message[-1].split(";")
@@ -79,7 +150,9 @@ class DataGatherer(DataCommon):
             if "UPDATE" in command[0]:
                 self.updated_stocks += 1
                 stock_symbol = command[STOCK_SYMBOL_POSITION]
+                # The stockname isn't always available so it's better to get it here
                 stock_name = self.get_stock_info(stock_symbol)
+                # Initialize stock_data
                 stock_data = pd.DataFrame(columns=columns_with_missing_data)
                 stock_data.loc[0, "Symbol"] = stock_symbol
                 stock_data["Updated"] = True
@@ -103,6 +176,7 @@ class DataGatherer(DataCommon):
                 else:
                     self.updated_stocks_df = stock_data
 
+                # Check if all stocks available in the queue has been handled
                 if self.updated_stocks % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0 or "FINAL" in command[0]:
                     with self.lock:
                         self.update_data(self.updated_stocks_df)
@@ -114,15 +188,36 @@ class DataGatherer(DataCommon):
             pass
 
 
-    def get_most_active_with_positive_change(self) -> list:
+    def get_most_active_stocks_from_yahoo(self) -> list:
+        """ Utilizes the yahoo finance package to find all most traded stocks of the day.
+
+        Return
+        ------
+        list
+            A list containing the most traded stocks of the day (as reported by Yahoo)
+        """
+
         # Get the 100 most traded stocks for the trading day
         movers = ya.get_day_most_active()
-        movers = movers[movers['% Change'] >= 0]
 
         return movers
 
 
     def get_monthly_sentiment_data_from_sentdex(self) -> pd.DataFrame:
+        """ Gather sentimentdata for the last 30 days from 'http://www.sentdex.com'
+
+        This function parses the sentdex webpage using BeautifulSoup to gather the stocks and their sentiment data from
+        the 30-day list. This function is taken from:
+        'https://medium.com/swlh/stock-market-screening-and-analysis-using-web-scraping-neural-networks-and-regression-analysis-f40742dd86e0'
+
+
+        Returns
+        -------
+        pandas.DataFrame
+            A dataframe with the sentiment for all stocks from the 30-day list on sentdex.com
+
+        """
+
         res = requests.get('http://www.sentdex.com/financial-analysis/?tf=30d')
         soup = BeautifulSoup(res.text, "html.parser")
         table = soup.find_all('tr')
@@ -262,7 +357,7 @@ class DataGatherer(DataCommon):
         stocks_df = pd.DataFrame()
 
         if stocklist == stocklist_enum.Movers:
-            stocks_df = self.get_most_active_with_positive_change()
+            stocks_df = self.get_most_active_stocks_from_yahoo()
         elif stocklist == stocklist_enum.CompanyInfo:
             stocks_df = self.get_monthly_sentiment_data_from_sentdex()
         elif stocklist == stocklist_enum.TwitterBullBear:

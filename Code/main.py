@@ -18,7 +18,7 @@ def run_data_interface(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
 def run_data_gatherer(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
     print("{} Data gatherer starting...".format(DATA_GATHERER_MESSAGE_HEADER))
     data_gatherer = DataGatherer(lock, queue)
-    data_gatherer.gather_data()
+    data_gatherer.gather_new_data()
     print("{} Data gathering finished!".format(DATA_GATHERER_MESSAGE_HEADER))
     event.set()
     print("{} Event set! Will start gathering missing data...".format(DATA_GATHERER_MESSAGE_HEADER))
