@@ -32,18 +32,10 @@ class GUI(Frame):
 
         RootFrame (main window):
             OptionsFrame (TOP):
-                SortFrame:
-                    SortLabel
-                    SortKeyDropDownList
-                    SortingDirectionButton
-                    SubmitSortingOptionsButton
-                NumStocksFrame:
-                    NumberOfStocksLabel
-                    NumberOfStocksEntry
-                    NumStocksApplyButton
-            TreeFrame (BOTTOM):
-                VerticalScrollBar
-                TreeView
+                SortFrame: SortLabel, SortKeyDropDownList, SortingDirectionButton, SubmitSortingOptionsButton
+                NumStocksFrame: NumberOfStocksLabel, NumberOfStocksEntry, NumStocksApplyButton
+                RefreshFrame: RefreshStocklistButton
+            TreeFrame (BOTTOM): VerticalScrollBar, TreeView
         """
 
         # Define the different GUI widgets
@@ -61,7 +53,10 @@ class GUI(Frame):
         self.num_stocks_frame = Frame(self.option_frames[1])
         self.num_stocks_frame.pack(side=LEFT)
 
-        for i in range(2, NUMBER_OF_OPTION_FRAMES):
+        self.refresh_frame = Frame(self.option_frames[2])
+        self.refresh_frame.pack(side=LEFT)
+
+        for i in range(3, NUMBER_OF_OPTION_FRAMES):
             label = Label(self.option_frames[i], text="Empty optionframe")
             label.pack(side=LEFT)
 
@@ -92,8 +87,8 @@ class GUI(Frame):
 
         self.submit_sorting_option = Button(self.sort_frame, text="Apply sorting", command=self.sort_stocklist)
         self.sorting_direction_button = Button(self.sort_frame,
-                                                text="Direction: {}".format(self.get_sort_direction()),
-                                                                            command=self.change_sort_direction)
+                                               text="Direction: {}".format(self.get_sort_direction()),
+                                               command=self.change_sort_direction)
         self.submit_sorting_option.pack(side=LEFT)
         self.sorting_direction_button.pack(side=LEFT)
 
@@ -104,6 +99,12 @@ class GUI(Frame):
         self.number_of_stocks_entry.pack(side=LEFT)
         self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply", command=self.update_stocklist)
         self.submit_number_of_stocks.pack(side=LEFT)
+
+        # Refresh button
+        self.refresh_stocklist_button = Button(self.refresh_frame, text="Refresh stocklist",
+                                               state=DISABLED,
+                                               command=self.refresh_stocklist_button_callback)
+        self.refresh_stocklist_button.pack(side=LEFT)
 
         # Setup treeview
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
@@ -146,6 +147,11 @@ class GUI(Frame):
         focused_widget = self.root.focus_get()
         if focused_widget is self.number_of_stocks_entry:
             self.update_stocklist()
+
+
+    def refresh_stocklist_button_callback(self):
+        self.sort_stocklist()
+        self.refresh_stocklist_button["state"] = DISABLED
 
 
     def get_sort_direction(self):
@@ -224,6 +230,7 @@ class GUI(Frame):
         # print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
         if self.data_interface.update_stocklist():
             # This should not be forced, a button sould appear if this returns true
-            self.sort_stocklist()
+            if self.refresh_stocklist_button["state"] == DISABLED:
+                self.refresh_stocklist_button["state"] = NORMAL
 
         self.root.after(500, self.check_for_new_data)
