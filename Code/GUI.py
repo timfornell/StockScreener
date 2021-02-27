@@ -22,6 +22,58 @@ class GUI(Frame):
         self.root.after(100, self.check_for_new_data)
 
 
+    def intitialize_GUI_layout(self) -> None:
+        """ Create and connect all Frames that are used to place stuff in the GUI
+
+        Description
+        -----------
+        This function creates an empty layout of Frames and connects them to each other so that information in the GUI
+        is displayed in a somewhat orderly manner. The layout is currently like this:
+
+        RootFrame (main window):
+            OptionsFrame (TOP):
+                SortFrame (LEFT):
+                    SortKeyFrame (TOP):
+                        SortLabel (LEFT)
+                        SortKeyDropDownList (RIGHT)
+                    SortKeyButtonsFrame (BOTTOM):
+                        SortingDirectionButton (LEFT)
+                        SubmitSortingOptionsButton (RIGHT)
+                NumStocksFrame (RIGHT):
+                    NumStocksEntryFrame (TOP):
+                        NumberOfStocksLabel (LEFT)
+                        NumberOfStocksEntry (RIGHT)
+                    NumStocksApplyButton (BOTTOM)
+            TreeFrame (BOTTOM):
+                ScrollFrame (LEFT):
+                    VerticalScrollBar (LEFT)
+                TreeView (RIGHT)
+        """
+
+        # Define the different GUI widgets
+        self.options_frame = Frame(self.root)
+        self.options_frame.pack(side=TOP)
+
+        self.sort_frame = Frame(self.options_frame)
+        self.sort_frame.pack(side=LEFT)
+        self.sort_key_frame = Frame(self.sort_frame)
+        self.sort_key_frame.pack(side=TOP)
+        self.sort_key_buttons = Frame(self.sort_frame)
+        self.sort_key_buttons.pack(side=BOTTOM)
+
+        self.num_stocks_frame = Frame(self.options_frame)
+        self.num_stocks_frame.pack(side=RIGHT, ipadx=30)
+
+        self.num_stocks_entry_frame = Frame(self.num_stocks_frame)
+        self.num_stocks_entry_frame.pack(side=TOP)
+
+        self.tree_frame = Frame(self.root)
+        self.tree_frame.pack(side=BOTTOM, fill="both", expand=True)
+
+        self.scroll_frame = Frame(self.tree_frame)
+        self.scroll_frame.pack(side=LEFT, fill="y")
+
+
     def initialize_user_interface(self) -> None:
         # Configure the root object
         self.root.title("Stock Screener")
@@ -34,24 +86,15 @@ class GUI(Frame):
         self.sort_variable_string = "Volume"
         self.sort_direction = False # False is descending and True is ascending
 
-        # Define the different GUI widgets
-        self.options_frame = Frame(self.root)
-        self.options_frame.pack(side=TOP)
+        self.intitialize_GUI_layout()
 
         # Sort options
-        self.sort_frame = Frame(self.options_frame)
-        self.sort_frame.pack(side=LEFT)
-
-        self.sort_key_frame = Frame(self.sort_frame)
-        self.sort_key_frame.pack(side=TOP)
         self.sort_var = StringVar(self.sort_key_frame, value=self.sort_variable_string)
         self.sort_label = Label(self.sort_key_frame, text="Sorting key:")
         self.sort_key = OptionMenu(self.sort_key_frame, self.sort_var, *self.sort_options, command=self.set_sort_variable)
         self.sort_label.pack(side=LEFT)
         self.sort_key.pack(side=RIGHT)
 
-        self.sort_key_buttons = Frame(self.sort_frame)
-        self.sort_key_buttons.pack(side=BOTTOM)
         self.submit_sorting_option = Button(self.sort_key_buttons, text="Apply sorting", command=self.sort_stocklist)
         self.sorting_direction_button = Button(self.sort_key_buttons,
                                                 text="Direction: {}".format(self.get_sort_direction()),
@@ -60,11 +103,6 @@ class GUI(Frame):
         self.sorting_direction_button.pack(side=LEFT)
 
         # Number of stocks to display
-        self.num_stocks_frame = Frame(self.options_frame)
-        self.num_stocks_frame.pack(side=RIGHT)
-
-        self.num_stocks_entry_frame = Frame(self.num_stocks_frame)
-        self.num_stocks_entry_frame.pack(side=TOP)
         self.number_of_stocks_label = Label(self.num_stocks_entry_frame, text="Number of stocks to show:")
         self.number_of_stocks_entry = Entry(self.num_stocks_entry_frame)
         self.number_of_stocks_label.pack(side=LEFT)
@@ -74,8 +112,6 @@ class GUI(Frame):
         self.submit_number_of_stocks.pack(side=BOTTOM)
 
         # Setup treeview
-        self.tree_frame = Frame(self.root)
-        self.tree_frame.pack(side=BOTTOM, fill="both", expand=True)
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
         self.tree.bind("<Button-1>", self.mouse_click)
         self.tree.pack(side=RIGHT, fill="both", expand=True)
@@ -87,8 +123,6 @@ class GUI(Frame):
         self.tree["show"] = "headings"
         self.treeview = self.tree
 
-        self.scroll_frame = Frame(self.tree_frame)
-        self.scroll_frame.pack(side=LEFT, fill="y")
         self.vert_scrollbar = Scrollbar(self.scroll_frame, orient="vertical", command=self.tree.yview)
         self.vert_scrollbar.pack(side=LEFT, fill="y", anchor=W)
         self.tree.configure(yscrollcommand=self.vert_scrollbar.set)
