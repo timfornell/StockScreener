@@ -432,6 +432,13 @@ class DataGatherer(DataCommon):
             yahoo_data = requests.get("https://finance.yahoo.com/quote/{}".format(symbol))
             soup = BeautifulSoup(yahoo_data.text, "html.parser")
             stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text.split("(")[0].rstrip()
+
+            # Not all stocks exist on yahoo finance
+            if stock_name.isnumeric():
+                marketwatch_data = requests.get("https://www.marketwatch.com/investing/stock/{}".format(symbol))
+                soup = BeautifulSoup(marketwatch_data.text, "html.parser")
+                stock_name = soup.find("h1", {"class": "company__name"}).text
+
         except:
             print("{} Something went wrong when parsing name for ticker {}.".format(DATA_GATHERER_MESSAGE_HEADER, symbol))
 
