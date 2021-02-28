@@ -116,7 +116,6 @@ class DataCommon():
         return "https://finance.yahoo.com/quote/{}".format(stock_symbol)
 
 
-
     def get_marketwatch_webpage(self, stock_symbol: str) -> str:
         """ Get the html-link to a stock on Marketwatch
 
@@ -135,3 +134,47 @@ class DataCommon():
             The link to the webpage
         """
         return "https://www.marketwatch.com/investing/stock/{}".format(stock_symbol)
+
+
+    def get_tradefollowers_webpage(self, stock_symbol: str) -> str:
+        """ Get the html-link to a stock on Tradefollower
+
+        Description
+        -----------
+        Returns the link to the stock on Tradefollower if it can be found, if not an empty string is returned
+
+        Parameters
+        ----------
+        stock_symbol : str
+            Ticker symbol for the stock
+
+        Returns
+        -------
+        str
+            The link to the webpage
+        """
+        return "https://www.tradefollowers.com/stock/stock_detail.jsp?s=${}".format(stock_symbol)
+
+
+    def get_sentdex_webpage(self, stock_symbol: str) -> str:
+        """ Get the html-link to a stock on Sentdex
+
+        Description
+        -----------
+        Returns the link to the stock on Sentdex if it can be found, if not an empty string is returned
+
+        Parameters
+        ----------
+        stock_symbol : str
+            Ticker symbol for the stock
+
+        Returns
+        -------
+        str
+            The link to the webpage
+        """
+        return "http://www.sentdex.com/financial-analysis/?i={}&tf=all".format(stock_symbol)
+
+
+
+

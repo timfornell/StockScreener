@@ -139,6 +139,8 @@ class GUI(Frame):
         self.popup = Menu(self.root, tearoff=0)
         self.popup.add_command(label="Open on Yahoo Finance", command=self.open_yahoo_finance_webpage)
         self.popup.add_command(label="Open on Marketwatch", command=self.open_marketwatch_webpage)
+        self.popup.add_command(label="Open on Tradefollowers", command=self.open_tradefollowers_webpage)
+        self.popup.add_command(label="Open on Sentdex", command=self.open_sentdex_webpage)
         # Separator can be used to separate several options visually
         # self.popup.add_separator()
 
@@ -186,6 +188,16 @@ class GUI(Frame):
         webbrowser.open_new_tab(self.data_interface.get_marketwatch_webpage(stock_symbol))
 
 
+    def open_tradefollowers_webpage(self):
+        stock_symbol = self.popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_tradefollowers_webpage(stock_symbol))
+
+
+    def open_sentdex_webpage(self):
+        stock_symbol = self.popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_sentdex_webpage(stock_symbol))
+
+
     def right_click_tree(self, event):
         try:
             region = self.tree.identify("region", event.x, event.y)
@@ -196,7 +208,6 @@ class GUI(Frame):
         finally:
             # make sure to release the grab (Tk 8.0a1 only)
             self.popup.grab_release()
-
 
 
     def enter_key_callback(self, event):
