@@ -151,7 +151,7 @@ class DataGatherer(DataCommon):
                 self.updated_stocks += 1
                 stock_symbol = command[STOCK_SYMBOL_POSITION]
                 # The stockname isn't always available so it's better to get it here
-                stock_name = self.get_stock_info(stock_symbol)
+                stock_name = self.get_stock_name_from_yahoo(stock_symbol)
                 # Initialize stock_data
                 stock_data = pd.DataFrame(columns=columns_with_missing_data)
                 stock_data.loc[0, "Symbol"] = stock_symbol
@@ -159,7 +159,7 @@ class DataGatherer(DataCommon):
                 stock_data["Name"] = stock_name
 
                 if set(["Twit_1d_Mom", "Twit_7d_Mom"]).intersection(set(columns_with_missing_data)) and stock_name:
-                        success, twitter_momentum = self.get_twitter_data(stock_symbol, stock_name)
+                        success, twitter_momentum = self.get_one_and_seven_day_momentum_from_twitter(stock_symbol, stock_name)
                         if success:
                             print("{} Found twitter data for {}!".format(DATA_GATHERER_MESSAGE_HEADER, stock_name))
                             stock_data["Twit_1d_Mom"] = twitter_momentum["Twit_1d_Mom"]
@@ -260,7 +260,7 @@ class DataGatherer(DataCommon):
 
         Description
         -----------
-        This function should not be used on its own, it is only a helper function for get_bull_bear_data_from_twitter
+        This function should not be used on its own, it is only a helper function for get_bull_data_from_twitter
         and get_twitter_momentum_score since the process of parsing data from 'tradefollowers.com' is identical for
         those two functions.
 
@@ -301,17 +301,17 @@ class DataGatherer(DataCommon):
         return (twit_stock, sector, industry, twit_score)
 
 
-    def get_bull_bear_data_from_twitter(self) -> pd.DataFrame:
-        """
+    def get_bull_data_from_twitter(self) -> pd.DataFrame:
+        """ Gather bull and bear data from twitter
 
         Description
         -----------
-
-        Parameters
-        ----------
+        Parses tradefollowers.com to find the most bullish stocks on twitter during the last 30 days.
 
         Returns
         -------
+        pandas.DataFrame
+            A dataframe with stocks and the 'bull score'
 
         """
 
@@ -331,16 +331,16 @@ class DataGatherer(DataCommon):
 
 
     def get_twitter_momentum_score(self) -> pd.DataFrame:
-        """
+        """ Gather momentum score from twitter
 
         Description
         -----------
-
-        Parameters
-        ----------
+        Parses tradefollowers.com to find the stocks with highest momentum on twitter during the last 30 days.
 
         Returns
         -------
+        pandas.DataFrame
+            A dataframe with stocks and the 'momentum score'
 
         """
 
@@ -365,17 +365,25 @@ class DataGatherer(DataCommon):
         return twitter_momentum
 
 
-    def get_twitter_data(self, symbol: str, name: str) -> Tuple[bool, dict]:
-        """
+    def get_one_and_seven_day_momentum_from_twitter(self, symbol: str, name: str) -> Tuple[bool, dict]:
+        """ Gathers 1 and 7 day momentum scores for a specified stock
 
         Description
         -----------
+        This function gathers 1 and 7 day momentum score for a given ticker symbol. It is intended to be used in
+        update_stocks_with_missing_data when the GUI has requested some information to be gathered for a stock.
 
         Parameters
         ----------
+        symbol : str
+            Ticker symbol for a stock
+        name : str
+            Name of a stock
 
         Returns
         -------
+        Tuple[bool, dict]
+            A tuple containing a bool indicating if any data was found and a dict with potential data
 
         """
 
@@ -400,17 +408,22 @@ class DataGatherer(DataCommon):
         return success, data
 
 
-    def get_stock_info(self, symbol: str) -> str:
-        """
+    def get_stock_name_from_yahoo(self, symbol: str) -> str:
+        """ Get the name of a stock using its ticker from Yahoo finance
 
         Description
         -----------
+        Parses finance.yahoo using BeautifulSoup to find the name of a stock based on its ticker symbol.
 
         Parameters
         ----------
+        symbol : str
+            Ticker symbol for the stock of interest
 
         Returns
         -------
+        str
+            Name of the stock, if parsing wasn't successful it is set to an empty string
 
         """
 
@@ -426,16 +439,21 @@ class DataGatherer(DataCommon):
 
 
     def get_stocklist(self, stocklist: stocklist_enum) -> pd.DataFrame:
-        """
+        """ Function to decide which functino to call for a given stocklist_enum value
 
         Description
         -----------
+        Takes a stocklist_enum value and maps it to a function to call for it.
 
         Parameters
         ----------
+        stocklist : stocklist_enum
+            Which stocklist that data should be gathered for
 
         Returns
         -------
+        pandas.DataFrame
+            Dataframe containing the parsed data, see individual funtions for information on content
 
         """
 
@@ -446,7 +464,7 @@ class DataGatherer(DataCommon):
         elif stocklist == stocklist_enum.CompanyInfo:
             stocks_df = self.get_monthly_sentiment_data_from_sentdex()
         elif stocklist == stocklist_enum.TwitterBullBear:
-            stocks_df = self.get_bull_bear_data_from_twitter()
+            stocks_df = self.get_bull_data_from_twitter()
         elif stocklist == stocklist_enum.TwitterMomentum:
             stocks_df = self.get_twitter_momentum_score()
 

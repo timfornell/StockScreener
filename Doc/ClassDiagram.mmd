@@ -28,10 +28,10 @@ class DataGatherer{
     -get_most_active_with_positive_change() list
     -get_monthly_sentiment_data_from_sentdex() DataFrame
     -parse_twitter_data(page: str) Tuple
-    -get_bull_bear_data_from_twitter() DataFrame
+    -get_bull_data_from_twitter() DataFrame
     -get_twitter_momentum_score() DataFrame
-    -get_twitter_data(symbol: str, name: str) dict
-    -get_stock_info(symbol: str) str
+    -get_one_and_seven_day_momentum_from_twitter(symbol: str, name: str) dict
+    -get_stock_name_from_yahoo(symbol: str) str
     -get_stocklist(stocklist: stocklist_enum)
 }
 
