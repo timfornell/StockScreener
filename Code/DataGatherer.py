@@ -54,8 +54,6 @@ class DataGatherer(DataCommon):
         super().__init__(lock, queue)
         self.updated_stocks = 0
         self.updated_stocks_df = pd.DataFrame()
-        self.lock = lock
-        self.queue = queue
 
 
     def gather_new_data(self) -> None:
@@ -74,7 +72,7 @@ class DataGatherer(DataCommon):
                 with self.lock:
                     Path.mkdir(DATA_FOLDER)
 
-            if not any(Path(DATA_FOLDER).iterdir()):
+            if True or not any(Path(DATA_FOLDER).iterdir()):
                 with self.lock:
                     stock_dict = {}
                     for stocklist in stocklist_enum:
@@ -109,16 +107,22 @@ class DataGatherer(DataCommon):
 
         stock_df = pd.DataFrame()
         for stocklist in stocklist_enum:
-            if not stock_df.empty:
-                stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
-            else:
+            # if not stock_df.empty:
+            #     stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
+            if stock_df.empty:
                 stock_df = stocklists[stocklist]
+                continue
+
+            set_cols = set(stocklists[stocklist].columns).intersection(set(stock_df.columns))
+            if set_cols != set(["Symbol"]):
+                for col in set_cols:
+                    stock_df[col] = stock_df[col].combine_first(stocklists[stocklist][col])
+                    stocklists[stocklist].drop(col)
+
+            stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
+
 
         # Make the stocklist a bit more nicer
-        stock_df["Sector"] = stock_df["Sector_x"].combine_first(stock_df["Sector_y"])
-        stock_df = stock_df.drop(["Sector_x", "Sector_y"], axis=1)
-        stock_df["Industry"] = stock_df["Industry_x"].combine_first(stock_df["Industry_y"])
-        stock_df = stock_df.drop(["Industry_x", "Industry_y"], axis=1)
         stock_df.drop(['Market Cap'], axis=1, inplace=True)
         stock_df["Volume"] = stock_df["Volume"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
         stock_df["Avg Vol (3 month)"] = stock_df["Avg Vol (3 month)"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)

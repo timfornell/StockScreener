@@ -1,5 +1,5 @@
 ☐ Replace all "try-except" with "raise customerror" and have a "try-except" at the top level instead
-☐ merge_stocklists should either check if all enum values are in the dict or loop through the dict's keys
+✔ merge_stocklists should either check if all enum values are in the dict or loop through the dict's keys @done(21-02-28 13:58)
 ☐ update_stocks_with_missing_data should be renamed to something more fitting and modified so that it can handle any commands the DataInterface might send. Itself should not try to read the queue, it should take a command and message as input.
 ✔ Find out why some of the stocknames are numbers @done(21-02-28 12:44) - Use marketwatch as a backup
 ☐ Implement right click funtionality in the table
