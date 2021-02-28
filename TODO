@@ -3,3 +3,4 @@
 ☐ update_stocks_with_missing_data should be renamed to something more fitting and modified so that it can handle any commands the DataInterface might send. Itself should not try to read the queue, it should take a command and message as input.
 ☐ Find out why some of the stocknames are numbers
 ☐ Implement right click funtionality in the table
+☐ Make the application more generic so that e.g. crypto or other stuff can be added
