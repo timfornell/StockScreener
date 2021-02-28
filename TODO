@@ -4,3 +4,7 @@
 ✔ Find out why some of the stocknames are numbers @done(21-02-28 12:44) - Use marketwatch as a backup
 ☐ Implement right click funtionality in the table
 ☐ Make the application more generic so that e.g. crypto or other stuff can be added
+☐ Fill in function documentation for DataInterface
+☐ Fill in function documentation for GUI
+☐ Fill in function documentation for DataCommon
+☐ Finalize the flowchart
