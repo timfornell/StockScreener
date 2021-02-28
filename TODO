@@ -2,9 +2,10 @@
 ✔ merge_stocklists should either check if all enum values are in the dict or loop through the dict's keys @done(21-02-28 13:58)
 ☐ update_stocks_with_missing_data should be renamed to something more fitting and modified so that it can handle any commands the DataInterface might send. Itself should not try to read the queue, it should take a command and message as input.
 ✔ Find out why some of the stocknames are numbers @done(21-02-28 12:44) - Use marketwatch as a backup
-☐ Implement right click funtionality in the table
+✔ Implement right click funtionality in the table @done(21-02-28 16:43)
 ☐ Make the application more generic so that e.g. crypto or other stuff can be added
 ☐ Fill in function documentation for DataInterface
 ☐ Fill in function documentation for GUI
 ☐ Fill in function documentation for DataCommon
 ☐ Finalize the flowchart
+✔ It should be possible to go to the webpages by rightclicking a row in the table @done(21-02-28 16:43)
