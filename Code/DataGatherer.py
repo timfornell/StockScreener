@@ -72,7 +72,7 @@ class DataGatherer(DataCommon):
                 with self.lock:
                     Path.mkdir(DATA_FOLDER)
 
-            if True or not any(Path(DATA_FOLDER).iterdir()):
+            if not any(Path(DATA_FOLDER).iterdir()):
                 with self.lock:
                     stock_dict = {}
                     for stocklist in stocklist_enum:
@@ -107,8 +107,6 @@ class DataGatherer(DataCommon):
 
         stock_df = pd.DataFrame()
         for stocklist in stocklist_enum:
-            # if not stock_df.empty:
-            #     stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
             if stock_df.empty:
                 stock_df = stocklists[stocklist]
                 continue
@@ -155,7 +153,7 @@ class DataGatherer(DataCommon):
                 self.updated_stocks += 1
                 stock_symbol = command[STOCK_SYMBOL_POSITION]
                 # The stockname isn't always available so it's better to get it here
-                stock_name = self.get_stock_name_from_yahoo(stock_symbol)
+                stock_name = self.get_stock_name(stock_symbol)
                 # Initialize stock_data
                 stock_data = pd.DataFrame(columns=columns_with_missing_data)
                 stock_data.loc[0, "Symbol"] = stock_symbol
@@ -410,43 +408,6 @@ class DataGatherer(DataCommon):
                     break
 
         return success, data
-
-
-    def get_stock_name_from_yahoo(self, symbol: str) -> str:
-        """ Get the name of a stock using its ticker from Yahoo finance
-
-        Description
-        -----------
-        Parses finance.yahoo using BeautifulSoup to find the name of a stock based on its ticker symbol.
-
-        Parameters
-        ----------
-        symbol : str
-            Ticker symbol for the stock of interest
-
-        Returns
-        -------
-        str
-            Name of the stock, if parsing wasn't successful it is set to an empty string
-
-        """
-
-        stock_name = ""
-        try:
-            yahoo_data = requests.get("https://finance.yahoo.com/quote/{}".format(symbol))
-            soup = BeautifulSoup(yahoo_data.text, "html.parser")
-            stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text.split("(")[0].rstrip()
-
-            # Not all stocks exist on yahoo finance
-            if stock_name.isnumeric():
-                marketwatch_data = requests.get("https://www.marketwatch.com/investing/stock/{}".format(symbol))
-                soup = BeautifulSoup(marketwatch_data.text, "html.parser")
-                stock_name = soup.find("h1", {"class": "company__name"}).text
-
-        except:
-            print("{} Something went wrong when parsing name for ticker {}.".format(DATA_GATHERER_MESSAGE_HEADER, symbol))
-
-        return stock_name
 
 
     def get_stocklist(self, stocklist: stocklist_enum) -> pd.DataFrame:

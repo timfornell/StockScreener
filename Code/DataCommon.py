@@ -1,9 +1,11 @@
+from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import multiprocessing as mp
 
 from pathlib import Path
 from pandas.core.reshape.merge import merge
+import requests
 
 from Definitions import *
 
@@ -50,3 +52,86 @@ class DataCommon():
             self.write_data(stock_df)
         except Exception as e:
             print("{} Failed to update data, got {}".format(DATA_COMMON_MESSAGE_HEADER, e))
+
+
+    def get_stock_name(self, stock_symbol: str) -> str:
+        """ Get the name of a stock using its ticker from Yahoo finance
+
+        Description
+        -----------
+        Parses finance.yahoo using BeautifulSoup to find the name of a stock based on its ticker symbol.
+
+        Parameters
+        ----------
+        symbol : str
+            Ticker symbol for the stock of interest
+
+        Returns
+        -------
+        str
+            Name of the stock, if parsing wasn't successful it is set to an empty string
+
+        """
+        try:
+            yahoo_link = self.get_yahoo_finance_webpage(stock_symbol)
+            market_watch_link = self.get_marketwatch_webpage(stock_symbol)
+
+            data = requests.get(yahoo_link)
+            soup = BeautifulSoup(data.text, "html.parser")
+            stock_name = soup.find("h1", {"class": "D(ib) Fz(18px)"}).text.split("(")[0].rstrip()
+
+            if stock_name and not stock_name.isnumeric():
+                return stock_name
+
+            data = requests.get(market_watch_link)
+            soup = BeautifulSoup(data.text, "html.parser")
+            stock_name = soup.find("h1", {"class": "company__name"}).text
+
+            if stock_name:
+                return stock_name
+
+        except:
+            print("{} Something went wrong when parsing name for ticker {}.".format(DATA_COMMON_MESSAGE_HEADER, stock_symbol))
+
+        return ""
+
+
+    def get_yahoo_finance_webpage(self, stock_symbol: str) -> str:
+        """ Get the html-link to a stock on Yahoo finance
+
+        Description
+        -----------
+        Returns the link to the stock on Yahoo finance if it can be found, if not an empty string is returned
+
+        Parameters
+        ----------
+        stock_symbol : str
+            Ticker symbol for the stock
+
+        Returns
+        -------
+        str
+            The link to the webpage
+        """
+        return "https://finance.yahoo.com/quote/{}".format(stock_symbol)
+
+
+
+    def get_marketwatch_webpage(self, stock_symbol: str) -> str:
+        """ Get the html-link to a stock on Marketwatch
+
+        Description
+        -----------
+        Returns the link to the stock on Marketwatch if it can be found, if not an empty string is returned
+
+        Parameters
+        ----------
+        stock_symbol : str
+            Ticker symbol for the stock
+
+        Returns
+        -------
+        str
+            The link to the webpage
+        """
+        return "https://www.marketwatch.com/investing/stock/{}".format(stock_symbol)
