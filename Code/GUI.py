@@ -1,3 +1,4 @@
+import webbrowser
 import pandas as pd
 import multiprocessing as mp
 
@@ -121,8 +122,6 @@ class GUI(Frame):
 
         # Setup treeview
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
-        self.tree.bind("<Button-1>", self.mouse_click)
-
         self.vert_scrollbar = Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=self.vert_scrollbar.set)
 
@@ -136,9 +135,17 @@ class GUI(Frame):
         self.tree["show"] = "headings"
         self.treeview = self.tree
 
+        # Rightclick menu
+        self.popup = Menu(self.root, tearoff=0)
+        self.popup.add_command(label="Open on Yahoo Finance", command=self.open_yahoo_finance_webpage)
+        self.popup.add_command(label="Open on Marketwatch", command=self.open_marketwatch_webpage)
+        # Separator can be used to separate several options visually
+        # self.popup.add_separator()
 
         # Bind keys to functions
         self.root.bind("<Return>", self.enter_key_callback)
+        self.tree.bind("<Button-3>", self.right_click_tree)
+        self.tree.bind("<Button-1>", self.mouse_click)
 
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.initialize_stocklist()
@@ -167,6 +174,29 @@ class GUI(Frame):
 
             self.set_sort_variable(heading["text"], mouse_click=True)
             self.sort_stocklist()
+
+
+    def open_yahoo_finance_webpage(self):
+        stock_symbol = self.popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_yahoo_finance_webpage(stock_symbol))
+
+
+    def open_marketwatch_webpage(self):
+        stock_symbol = self.popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_marketwatch_webpage(stock_symbol))
+
+
+    def right_click_tree(self, event):
+        try:
+            region = self.tree.identify("region", event.x, event.y)
+            self.tree.selection_set(self.tree.identify_row(event.y))
+            self.popup.post(event.x_root, event.y_root)
+            if region == "cell":
+                self.popup.selection = self.tree.set(self.tree.identify_row(event.y))
+        finally:
+            # make sure to release the grab (Tk 8.0a1 only)
+            self.popup.grab_release()
+
 
 
     def enter_key_callback(self, event):
