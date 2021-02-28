@@ -22,12 +22,38 @@ class DataInterface(DataCommon):
 
 
     def initialize_stocklist(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         with self.lock:
             self.stocklist = self.read_data()
             self.working_stocklist = self.stocklist.head()
 
 
     def update_stocklist(self) -> bool:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         update_treeview = False
         if self.waiting_for_new_data:
             try:
@@ -54,6 +80,19 @@ class DataInterface(DataCommon):
 
 
     def fill_queue_with_stocks_to_update(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         self.waiting_for_new_data = True
         for i, stock in enumerate(self.stocklist[self.next_stock_to_request::].iterrows()):
             null_values = stock[1].isnull()
@@ -77,14 +116,53 @@ class DataInterface(DataCommon):
 
 
     def get_stocklist(self) -> pd.DataFrame:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         return self.stocklist
 
 
     def get_working_stocklist(self) -> pd.DataFrame:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         return self.working_stocklist
 
 
     def set_working_stocklist(self, num_stocks: str) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         if num_stocks.lower() == "all":
             self.working_stocklist = self.stocklist
         else:
@@ -96,6 +174,19 @@ class DataInterface(DataCommon):
 
 
     def sort_working_stocklist(self, sort_variable: str, sort_direction: bool) -> bool:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         list_was_sorted = False
         if sort_variable in self.working_stocklist.columns:
             print("{} Sorting stocklist based on '{}'.".format(DATA_INTERFACE_MESSAGE_HEADER, sort_variable))

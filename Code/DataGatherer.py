@@ -90,21 +90,21 @@ class DataGatherer(DataCommon):
     def merge_stocklists(self, stocklists: dict) -> pd.DataFrame:
         """ Merges output data gathered by gather_new_data
 
-            Description
-            -----------
-            This function is called when new data has been gathered by 'gather_new_data'. This function loops through
-            the provided dict and merges all these individual stocklists and merges them into one single dataframe.
-            It also removes/adds some columns that is or is not of interest.
+        Description
+        -----------
+        This function is called when new data has been gathered by 'gather_new_data'. This function loops through
+        the provided dict and merges all these individual stocklists and merges them into one single dataframe.
+        It also removes/adds some columns that is or is not of interest.
 
-            Parameters
-            ----------
-            stocklists : dict
-                A dict containing all individual stocklists to merge
+        Parameters
+        ----------
+        stocklists : dict
+            A dict containing all individual stocklists to merge
 
-            Returns
-            -------
-            pandas.DataFrame
-                A dataframe where all information from the dict has been merged together
+        Returns
+        -------
+        pandas.DataFrame
+            A dataframe where all information from the dict has been merged together
         """
 
         stock_df = pd.DataFrame()
@@ -256,6 +256,26 @@ class DataGatherer(DataCommon):
 
 
     def parse_twitter_data(self, page: str) -> Tuple[list, list, list, list]:
+        """ Helpfunction to parse data from twitter
+
+        Description
+        -----------
+        This function should not be used on its own, it is only a helper function for get_bull_bear_data_from_twitter
+        and get_twitter_momentum_score since the process of parsing data from 'tradefollowers.com' is identical for
+        those two functions.
+
+        Parameters
+        ----------
+        page : str
+            String containing the webpage to parse
+
+        Returns
+        -------
+        Tuple[list, list, list, list]
+            A tuple containing lists with data for stocks always contains the Symbol, Sector and Industry
+
+        """
+
         res = requests.get(page)
         soup = BeautifulSoup(res.text, "html.parser")
         twitter_stocks = soup.find_all('tr')
@@ -282,6 +302,19 @@ class DataGatherer(DataCommon):
 
 
     def get_bull_bear_data_from_twitter(self) -> pd.DataFrame:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         twitter_data = self.parse_twitter_data("https://www.tradefollowers.com/strength/twitter_strongest.jsp?tf=1m")
 
         twitter_df = pd.DataFrame({'Symbol': twitter_data[0], 'Sector': twitter_data[1], 'Industry': twitter_data[2],
@@ -298,6 +331,19 @@ class DataGatherer(DataCommon):
 
 
     def get_twitter_momentum_score(self) -> pd.DataFrame:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         twitter_data = self.parse_twitter_data("https://www.tradefollowers.com/active/twitter_active.jsp?tf=1m")
 
         twitter_momentum = pd.DataFrame({'Symbol': twitter_data[0], 'Sector': twitter_data[1], 'Industry': twitter_data[2],
@@ -320,6 +366,19 @@ class DataGatherer(DataCommon):
 
 
     def get_twitter_data(self, symbol: str, name: str) -> Tuple[bool, dict]:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         momentum_data = requests.get("https://www.tradefollowers.com/stock/stock_list.jsp?s={}".format(name))
         soup = BeautifulSoup(momentum_data.text, "html.parser")
         table = soup.find_all('tr')
@@ -342,6 +401,19 @@ class DataGatherer(DataCommon):
 
 
     def get_stock_info(self, symbol: str) -> str:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         stock_name = ""
         try:
             yahoo_data = requests.get("https://finance.yahoo.com/quote/{}".format(symbol))
@@ -354,6 +426,19 @@ class DataGatherer(DataCommon):
 
 
     def get_stocklist(self, stocklist: stocklist_enum) -> pd.DataFrame:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         stocks_df = pd.DataFrame()
 
         if stocklist == stocklist_enum.Movers:

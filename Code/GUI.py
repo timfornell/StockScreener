@@ -65,6 +65,19 @@ class GUI(Frame):
 
 
     def initialize_user_interface(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         # Configure the root object
         self.root.title("Stock Screener")
         self.root.grid_rowconfigure(0, weight=1)
@@ -132,6 +145,19 @@ class GUI(Frame):
 
 
     def mouse_click(self, event):
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         region = self.tree.identify("region", event.x, event.y)
         if region == "heading":
             column = self.tree.identify_column(event.x)
@@ -144,27 +170,92 @@ class GUI(Frame):
 
 
     def enter_key_callback(self, event):
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         focused_widget = self.root.focus_get()
         if focused_widget is self.number_of_stocks_entry:
             self.update_stocklist(callback=True)
 
 
     def refresh_stocklist_button_callback(self):
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.sort_stocklist()
         self.refresh_stocklist_button["state"] = DISABLED
 
 
     def get_sort_direction(self):
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         return "Ascending" if self.sort_direction else "Descending"
 
 
     def switch_sort_direction(self):
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         self.sort_direction = not self.sort_direction
         self.sorting_direction_button.configure(text="Direction: {}".format(self.get_sort_direction()))
 
 
     def change_sort_direction(self, mouse_click=False):
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         self.switch_sort_direction()
 
         if not mouse_click:
@@ -172,6 +263,19 @@ class GUI(Frame):
 
 
     def set_sort_variable(self, selection, mouse_click=False) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         if selection != self.sort_variable_string:
             self.sort_variable_string = selection
 
@@ -180,6 +284,19 @@ class GUI(Frame):
 
 
     def initialize_stocklist(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         print("{} Initialize stocklist to {} stocks.".format(GUI_MESSAGE_HEADER, self.num_stocks))
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.clear_tree()
@@ -187,6 +304,19 @@ class GUI(Frame):
 
 
     def update_stocklist(self, callback=False) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         if callback:
             new_value = self.number_of_stocks_entry.get()
             old_value = self.num_stocks
@@ -205,11 +335,37 @@ class GUI(Frame):
 
 
     def fill_tree(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         for i, stock in enumerate(self.data_interface.get_working_stocklist().iterrows()):
             self.insert_data(i, stock)
 
 
     def sort_stocklist(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         if self.data_interface.sort_working_stocklist(self.sort_variable_string, self.sort_direction):
             self.clear_tree()
 
@@ -218,16 +374,55 @@ class GUI(Frame):
 
 
     def insert_data(self, id, stock) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         self.treeview.insert("", "end", iid=id, values=tuple(stock[1]))
 
 
     def clear_tree(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         # Clear current tree
         for row in self.treeview.get_children():
             self.treeview.delete(row)
 
 
     def check_for_new_data(self) -> None:
+        """
+
+        Description
+        -----------
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+
         # print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
         if self.data_interface.update_stocklist():
             # This should not be forced, a button sould appear if this returns true
