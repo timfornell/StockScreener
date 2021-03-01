@@ -5,6 +5,7 @@ import multiprocessing as mp
 from DataInterface import DataInterface
 from tkinter import *
 from tkinter import ttk
+from tkinter import simpledialog
 
 from Definitions import GUI_MESSAGE_HEADER, NUMBER_OF_OPTION_FRAMES
 
@@ -136,13 +137,7 @@ class GUI(Frame):
         self.treeview = self.tree
 
         # Rightclick menu
-        self.popup = Menu(self.root, tearoff=0)
-        self.popup.add_command(label="Open on Yahoo Finance", command=self.open_yahoo_finance_webpage)
-        self.popup.add_command(label="Open on Marketwatch", command=self.open_marketwatch_webpage)
-        self.popup.add_command(label="Open on Tradefollowers", command=self.open_tradefollowers_webpage)
-        self.popup.add_command(label="Open on Sentdex", command=self.open_sentdex_webpage)
-        # Separator can be used to separate several options visually
-        # self.popup.add_separator()
+        self.setup_popup_menus()
 
         # Bind keys to functions
         self.root.bind("<Return>", self.enter_key_callback)
@@ -151,6 +146,42 @@ class GUI(Frame):
 
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.initialize_stocklist()
+
+
+    def setup_popup_menus(self) -> None:
+        """ Initialize popup menus
+
+        Description
+        -----------
+        Setup the popup menus that should appear when a user right clicks anywhere in the treeview. The popup menu is
+        different depending on if a header or a data row is clicked.
+        """
+
+        self.stock_popup = Menu(self.root, tearoff=0)
+        self.stock_popup.add_command(label="Open on Yahoo Finance", command=self.open_yahoo_finance_webpage)
+        self.stock_popup.add_command(label="Open on Marketwatch", command=self.open_marketwatch_webpage)
+        self.stock_popup.add_command(label="Open on Tradefollowers", command=self.open_tradefollowers_webpage)
+        self.stock_popup.add_command(label="Open on Sentdex", command=self.open_sentdex_webpage)
+
+        self.filter_popup = Menu(self.root, tearoff=0)
+        self.filter_popup.add_command(label="Empty", command= lambda: self.filter_function("empty"))
+        self.filter_popup.add_command(label="Not empty", command= lambda: self.filter_function("not_empty"))
+        self.filter_popup.add_command(label="NaN", command= lambda: self.filter_function("is_nan"))
+        self.filter_popup.add_command(label="not Nan", command= lambda: self.filter_function("not_nan"))
+        self.filter_popup.add_separator()
+
+        self.filter_popup.add_command(label="Text contains", command= lambda: self.filter_function("~", "str"))
+        self.filter_popup.add_command(label="Text does not contain", command= lambda: self.filter_function("!~", "str"))
+        self.filter_popup.add_command(label="Text equal to", command= lambda: self.filter_function("==", "str"))
+        self.filter_popup.add_command(label="Text not equal to", command= lambda: self.filter_function("!=", "str"))
+        self.filter_popup.add_separator()
+
+        self.filter_popup.add_command(label="Number greater than", command= lambda: self.filter_function(">", "num"))
+        self.filter_popup.add_command(label="Number greater than or qual to", command= lambda: self.filter_function(">=", "num"))
+        self.filter_popup.add_command(label="Number less than", command= lambda: self.filter_function("<", "num"))
+        self.filter_popup.add_command(label="Number less than or equal to", command= lambda: self.filter_function("<=", "num"))
+        self.filter_popup.add_command(label="Number equal to", command= lambda: self.filter_function("==", "num"))
+        self.filter_popup.add_command(label="Number not equal to", command= lambda: self.filter_function("!=", "num"))
 
 
     def mouse_click(self, event):
@@ -179,35 +210,81 @@ class GUI(Frame):
 
 
     def open_yahoo_finance_webpage(self):
-        stock_symbol = self.popup.selection["Symbol"]
+        stock_symbol = self.stock_popup.selection["Symbol"]
         webbrowser.open_new_tab(self.data_interface.get_yahoo_finance_webpage(stock_symbol))
 
 
     def open_marketwatch_webpage(self):
-        stock_symbol = self.popup.selection["Symbol"]
+        stock_symbol = self.stock_popup.selection["Symbol"]
         webbrowser.open_new_tab(self.data_interface.get_marketwatch_webpage(stock_symbol))
 
 
     def open_tradefollowers_webpage(self):
-        stock_symbol = self.popup.selection["Symbol"]
+        stock_symbol = self.stock_popup.selection["Symbol"]
         webbrowser.open_new_tab(self.data_interface.get_tradefollowers_webpage(stock_symbol))
 
 
     def open_sentdex_webpage(self):
-        stock_symbol = self.popup.selection["Symbol"]
+        stock_symbol = self.stock_popup.selection["Symbol"]
         webbrowser.open_new_tab(self.data_interface.get_sentdex_webpage(stock_symbol))
 
 
-    def right_click_tree(self, event):
+    def filter_function(self, filter_func, type="") -> None:
+        """ Filter data based on a criteria
+
+        Description
+        -----------
+        Callback function for when the user right clicks a column heading. Depending on what option was clicked either
+        prompt the used for the criteria to filter and the apply the filter or directly apply it.
+
+        Parameters
+        ----------
+        filter_func : str
+            A string indicating what logical operation to perform
+        type : str
+            A string indicating if it is a number or a string that should be filtered
+
+        """
+
+        if type == "num":
+            value = simpledialog.askfloat("num", "Enter value:", parent=self.root)
+            self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, value)
+        elif type == "str":
+            string = simpledialog.askstring("num", "Enter string:", parent=self.root)
+            self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, string)
+        elif filter_func == "empty":
+            print("Cell {}".format(filter_func))
+        elif filter_func == "not_empty":
+            print("Cell {}".format(filter_func))
+        elif filter_func == "is_nan":
+            print("Cell {}".format(filter_func))
+        elif filter_func == "not_nan":
+            print("Cell {}".format(filter_func))
+
+
+    def right_click_tree(self, event) -> None:
+        """ Handle right click on treeview
+
+        Description
+        -----------
+        Decides what to do when the treeview is right clicked and where to place the popup menu.
+
+        """
+
         try:
             region = self.tree.identify("region", event.x, event.y)
-            self.tree.selection_set(self.tree.identify_row(event.y))
-            self.popup.post(event.x_root, event.y_root)
             if region == "cell":
-                self.popup.selection = self.tree.set(self.tree.identify_row(event.y))
+                self.tree.selection_set(self.tree.identify_row(event.y))
+                self.stock_popup.selection = self.tree.set(self.tree.identify_row(event.y))
+                self.stock_popup.post(event.x_root, event.y_root)
+            elif region == "heading":
+                column = self.tree.identify_column(event.x)
+                # Since the treeview can't select a column the heading needs to be stored somewhere else
+                self.heading_to_filter = self.tree.heading(column)
+                self.filter_popup.post(event.x_root, event.y_root)
         finally:
             # make sure to release the grab (Tk 8.0a1 only)
-            self.popup.grab_release()
+            self.stock_popup.grab_release()
 
 
     def enter_key_callback(self, event):

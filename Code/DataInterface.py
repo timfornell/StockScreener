@@ -194,3 +194,8 @@ class DataInterface(DataCommon):
             list_was_sorted = True
 
         return list_was_sorted
+
+
+    def filter_working_stocklist(self, column, filter_func, value="") -> None:
+        print("Filter {} on {} {}".format(column, filter_func, value))
+

@@ -115,7 +115,7 @@ class DataGatherer(DataCommon):
             if set_cols != set(["Symbol"]):
                 for col in set_cols:
                     stock_df[col] = stock_df[col].combine_first(stocklists[stocklist][col])
-                    stocklists[stocklist].drop(col)
+                    stocklists[stocklist].drop(col, axis=1)
 
             stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
 
