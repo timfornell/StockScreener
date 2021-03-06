@@ -13,6 +13,9 @@ class DataInterface(DataCommon):
         super().__init__(lock, queue)
         self.stocklist = pd.DataFrame()
         self.working_stocklist = pd.DataFrame()
+        self.filtered_working_stocklist = pd.DataFrame()
+        self.using_filtered_stocklist = False
+        self.active_filters = {}
         self.waiting_for_new_data = False
         self.num_stocks_requested_to_update = 0
         self.next_stock_to_request = 0
@@ -145,8 +148,10 @@ class DataInterface(DataCommon):
         -------
 
         """
-
-        return self.working_stocklist
+        if not self.using_filtered_stocklist:
+            return self.working_stocklist
+        else:
+            return self.filtered_working_stocklist
 
 
     def set_working_stocklist(self, num_stocks: str) -> None:
@@ -190,12 +195,25 @@ class DataInterface(DataCommon):
         list_was_sorted = False
         if sort_variable in self.working_stocklist.columns:
             print("{} Sorting stocklist based on '{}'.".format(DATA_INTERFACE_MESSAGE_HEADER, sort_variable))
-            self.working_stocklist = self.working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
+            if self.using_filtered_stocklist and sort_variable in self.filtered_working_stocklist.columns:
+                self.filtered_working_stocklist = self.filtered_working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
+            else:
+                self.working_stocklist = self.working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
             list_was_sorted = True
+
 
         return list_was_sorted
 
 
-    def filter_working_stocklist(self, column, filter_func, value="") -> None:
-        print("Filter {} on {} {}".format(column, filter_func, value))
+    def filter_working_stocklist(self, column: str, filter_func, value=None) -> None:
+        self.using_filtered_stocklist = True
+        if self.filtered_working_stocklist.empty or column in self.active_filters.keys():
+            self.filtered_working_stocklist = self.working_stocklist.copy()
+
+        print("Filter {} using: x {} {}".format(column, filter_func, value))
+        self.active_filters[column] = {"func": filter_func, "val": value}
+        print(self.active_filters)
+        self.filtered_working_stocklist[column] = filter_func(self.filtered_working_stocklist[column], value)
+        self.filtered_working_stocklist = self.filtered_working_stocklist.dropna(subset=[column])
+
 

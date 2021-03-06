@@ -10,3 +10,4 @@
 ☐ Finalize the flowchart
 ✔ It should be possible to go to the webpages by rightclicking a row in the table @done(21-02-28 16:43)
 ☐ Implement possibility to filter on columns
+☐ Find out why "sector_y" and "sector_x" appears again

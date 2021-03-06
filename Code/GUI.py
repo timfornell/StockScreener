@@ -2,11 +2,12 @@ import webbrowser
 import pandas as pd
 import multiprocessing as mp
 
-from DataInterface import DataInterface
 from tkinter import *
 from tkinter import ttk
 from tkinter import simpledialog
 
+from DataCommon import *
+from DataInterface import DataInterface
 from Definitions import GUI_MESSAGE_HEADER, NUMBER_OF_OPTION_FRAMES
 
 
@@ -164,24 +165,22 @@ class GUI(Frame):
         self.stock_popup.add_command(label="Open on Sentdex", command=self.open_sentdex_webpage)
 
         self.filter_popup = Menu(self.root, tearoff=0)
-        self.filter_popup.add_command(label="Empty", command= lambda: self.filter_function("empty"))
-        self.filter_popup.add_command(label="Not empty", command= lambda: self.filter_function("not_empty"))
-        self.filter_popup.add_command(label="NaN", command= lambda: self.filter_function("is_nan"))
-        self.filter_popup.add_command(label="not Nan", command= lambda: self.filter_function("not_nan"))
+        self.filter_popup.add_command(label="NaN", command= lambda: self.filter_function(cell_is_nan, "is_nan", 0))
+        self.filter_popup.add_command(label="not Nan", command= lambda: self.filter_function(cell_is_not_nan, "not_nan", 1))
         self.filter_popup.add_separator()
 
-        self.filter_popup.add_command(label="Text contains", command= lambda: self.filter_function("~", "str"))
-        self.filter_popup.add_command(label="Text does not contain", command= lambda: self.filter_function("!~", "str"))
-        self.filter_popup.add_command(label="Text equal to", command= lambda: self.filter_function("==", "str"))
-        self.filter_popup.add_command(label="Text not equal to", command= lambda: self.filter_function("!=", "str"))
+        self.filter_popup.add_command(label="Text contains", command= lambda: self.filter_function(cell_contains, 3, "str"))
+        self.filter_popup.add_command(label="Text does not contain", command= lambda: self.filter_function(cell_does_not_contain, 4, "str"))
+        self.filter_popup.add_command(label="Text equal to", command= lambda: self.filter_function(cell_string_equals, 5, "str"))
+        self.filter_popup.add_command(label="Text not equal to", command= lambda: self.filter_function(cell_string_not_equals, 6, "str"))
         self.filter_popup.add_separator()
 
-        self.filter_popup.add_command(label="Number greater than", command= lambda: self.filter_function(">", "num"))
-        self.filter_popup.add_command(label="Number greater than or qual to", command= lambda: self.filter_function(">=", "num"))
-        self.filter_popup.add_command(label="Number less than", command= lambda: self.filter_function("<", "num"))
-        self.filter_popup.add_command(label="Number less than or equal to", command= lambda: self.filter_function("<=", "num"))
-        self.filter_popup.add_command(label="Number equal to", command= lambda: self.filter_function("==", "num"))
-        self.filter_popup.add_command(label="Number not equal to", command= lambda: self.filter_function("!=", "num"))
+        self.filter_popup.add_command(label="Number greater than", command= lambda: self.filter_function(cell_greater_than, 8, "num"))
+        self.filter_popup.add_command(label="Number greater than or qual to", command= lambda: self.filter_function(cell_greater_than_or_equal, 9, "num"))
+        self.filter_popup.add_command(label="Number less than", command= lambda: self.filter_function(cell_less_than, 10, "num"))
+        self.filter_popup.add_command(label="Number less than or equal to", command= lambda: self.filter_function(cell_less_than_or_equal, 11, "num"))
+        self.filter_popup.add_command(label="Number equal to", command= lambda: self.filter_function(cell_num_equals, 12, "num"))
+        self.filter_popup.add_command(label="Number not equal to", command= lambda: self.filter_function(cell_num_not_equals, 13, "num"))
 
 
     def mouse_click(self, event):
@@ -229,7 +228,7 @@ class GUI(Frame):
         webbrowser.open_new_tab(self.data_interface.get_sentdex_webpage(stock_symbol))
 
 
-    def filter_function(self, filter_func, type="") -> None:
+    def filter_function(self, filter_func, menu_index, type="") -> None:
         """ Filter data based on a criteria
 
         Description
@@ -245,21 +244,25 @@ class GUI(Frame):
             A string indicating if it is a number or a string that should be filtered
 
         """
-
         if type == "num":
             value = simpledialog.askfloat("num", "Enter value:", parent=self.root)
-            self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, value)
+            if isinstance(value, int) or isinstance(value, float):
+                label = [self.filter_popup.entrycget(menu_index, "label").split(":")[0], str(value)]
+                label = ": ".join(label)
+                self.filter_popup.entryconfigure(menu_index, label=label)
+                self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, value)
         elif type == "str":
-            string = simpledialog.askstring("num", "Enter string:", parent=self.root)
-            self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, string)
-        elif filter_func == "empty":
-            print("Cell {}".format(filter_func))
-        elif filter_func == "not_empty":
-            print("Cell {}".format(filter_func))
-        elif filter_func == "is_nan":
-            print("Cell {}".format(filter_func))
-        elif filter_func == "not_nan":
-            print("Cell {}".format(filter_func))
+            string = simpledialog.askstring("num", "Enter string:", parent=self.root).rstrip()
+            if string:
+                label = [self.filter_popup.entrycget(menu_index, "label").split(":")[0], string]
+                label = ": ".join(label)
+                self.filter_popup.entryconfigure(menu_index, label=label)
+                self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, string)
+        else:
+            self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func)
+
+        self.clear_tree()
+        self.update_stocklist()
 
 
     def right_click_tree(self, event) -> None:

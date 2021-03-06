@@ -115,7 +115,8 @@ class DataGatherer(DataCommon):
             if set_cols != set(["Symbol"]):
                 for col in set_cols:
                     stock_df[col] = stock_df[col].combine_first(stocklists[stocklist][col])
-                    stocklists[stocklist].drop(col, axis=1)
+                    if col != "Symbol":
+                        stocklists[stocklist] = stocklists[stocklist].drop(col, axis=1)
 
             stock_df = stock_df.merge(stocklists[stocklist], on="Symbol", how="outer")
 
@@ -123,6 +124,7 @@ class DataGatherer(DataCommon):
         # Make the stocklist a bit more nicer
         stock_df.drop(['Market Cap'], axis=1, inplace=True)
         stock_df["Volume"] = stock_df["Volume"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
+        stock_df["Name"] = stock_df["Name"].apply(lambda x: x if x else np.nan)
         stock_df["Avg Vol (3 month)"] = stock_df["Avg Vol (3 month)"].apply(lambda x: int(x) if not math.isnan(x) else np.nan)
         # This column is added to indicate if a stock has attempted to be updated at some point
         stock_df["Updated"] = False
