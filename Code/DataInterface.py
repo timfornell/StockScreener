@@ -215,13 +215,12 @@ class DataInterface(DataCommon):
 
         print("Filter {} using: x {} {}".format(column, filter_func, value))
         self.using_filtered_stocklist = True
-        self.filtered_working_stocklist = self.working_stocklist.copy()
         new_filter = {"column": column, "func": filter_func, "label": label, "val": value}
         self.update_active_filters(new_filter)
-        self.perform_filtering()
 
 
     def perform_filtering(self) -> None:
+        self.filtered_working_stocklist = self.working_stocklist.copy()
         for filter in self.active_filters:
             column = filter["column"]
             filter_func = filter["func"]
@@ -253,6 +252,14 @@ class DataInterface(DataCommon):
         """
 
         if len(self.active_filters) == 0:
-            return "No active filters"
+            self.using_filtered_stocklist = False
+            return ["No active filters"]
         else:
             return [x["label"] for x in self.active_filters]
+
+
+    def remove_filter(self, filter_label: str) -> None:
+        for i, filter in enumerate(self.active_filters):
+            if filter["label"] == filter_label:
+                del self.active_filters[i]
+                break

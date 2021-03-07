@@ -132,9 +132,9 @@ class GUI(Frame):
         self.selected_filter = StringVar(self.filter_frame, value="")
         self.active_filters_menu = OptionMenu(self.filter_frame, self.selected_filter, self.data_interface.get_active_filters())
         self.active_filters_menu.pack(side=LEFT)
-        self.remove_filter_button = Button(self.filter_frame, text="Remove filter")
+        self.remove_filter_button = Button(self.filter_frame, text="Remove filter", command=self.remove_filter_callback)
         self.remove_filter_button.pack(side=LEFT)
-        self.edit_filter_button = Button(self.filter_frame, text="Edit filter")
+        self.edit_filter_button = Button(self.filter_frame, text="Edit filter", command=self.edit_filter_callback)
         self.edit_filter_button.pack(side=LEFT)
 
         # Setup treeview
@@ -249,7 +249,7 @@ class GUI(Frame):
 
 
     """ Callback functions """
-    def mouse_click_callback(self, event):
+    def mouse_click_callback(self, event) -> None:
         region = self.tree.identify("region", event.x, event.y)
         if region == "heading":
             column = self.tree.identify_column(event.x)
@@ -286,17 +286,25 @@ class GUI(Frame):
             self.stock_popup.grab_release()
 
 
-    def enter_key_callback(self, event):
+    def enter_key_callback(self, event) -> None:
         focused_widget = self.root.focus_get()
         if focused_widget is self.number_of_stocks_entry:
             self.update_stocklist(callback=True)
 
 
-    """ Refresh button functions """
     def refresh_stocklist_button_callback(self):
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.sort_stocklist()
         self.refresh_stocklist_button["state"] = DISABLED
+
+
+    def edit_filter_callback(self) -> None:
+        pass
+
+
+    def remove_filter_callback(self) -> None:
+        self.data_interface.remove_filter(self.selected_filter.get())
+        self.apply_filters()
 
 
     """ Right click functions """
@@ -357,15 +365,22 @@ class GUI(Frame):
         else:
             self.data_interface.filter_working_stocklist(column, filter_func, label)
 
+        self.apply_filters()
+
+
+    def apply_filters(self) -> None:
         self.update_active_filter_list()
         self.clear_tree()
+        self.data_interface.perform_filtering()
         self.update_stocklist()
 
 
     def update_active_filter_list(self) -> None:
         active_filters = self.data_interface.get_active_filters()
         self.active_filters_menu["menu"].delete(0, "end")
-        for filter in active_filters:
+        for i, filter in enumerate(active_filters):
+            if i == 0:
+                self.selected_filter.set(filter)
             self.active_filters_menu["menu"].add_command(label=filter, command=tkinter._setit(self.selected_filter, filter))
 
 
