@@ -1,3 +1,4 @@
+import tkinter
 import webbrowser
 import pandas as pd
 import multiprocessing as mp
@@ -59,7 +60,10 @@ class GUI(Frame):
         self.refresh_frame = Frame(self.option_frames[2])
         self.refresh_frame.pack(side=LEFT)
 
-        for i in range(3, NUMBER_OF_OPTION_FRAMES):
+        self.filter_frame = Frame(self.option_frames[3])
+        self.filter_frame.pack(side=LEFT)
+
+        for i in range(4, NUMBER_OF_OPTION_FRAMES):
             label = Label(self.option_frames[i], text="Empty optionframe")
             label.pack(side=LEFT)
 
@@ -122,6 +126,17 @@ class GUI(Frame):
                                                command=self.refresh_stocklist_button_callback)
         self.refresh_stocklist_button.pack(side=LEFT)
 
+        # Filter options
+        self.filter_frame_label = Label(self.filter_frame, text="Active filters (evaluated top-down):")
+        self.filter_frame_label.pack(side=TOP)
+        self.selected_filter = StringVar(self.filter_frame, value="")
+        self.active_filters_menu = OptionMenu(self.filter_frame, self.selected_filter, self.data_interface.get_active_filters())
+        self.active_filters_menu.pack(side=LEFT)
+        self.remove_filter_button = Button(self.filter_frame, text="Remove filter")
+        self.remove_filter_button.pack(side=LEFT)
+        self.edit_filter_button = Button(self.filter_frame, text="Edit filter")
+        self.edit_filter_button.pack(side=LEFT)
+
         # Setup treeview
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
         self.vert_scrollbar = Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
@@ -142,8 +157,8 @@ class GUI(Frame):
 
         # Bind keys to functions
         self.root.bind("<Return>", self.enter_key_callback)
-        self.tree.bind("<Button-3>", self.right_click_tree)
-        self.tree.bind("<Button-1>", self.mouse_click)
+        self.tree.bind("<Button-3>", self.right_click_callback)
+        self.tree.bind("<Button-1>", self.mouse_click_callback)
 
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.initialize_stocklist()
@@ -165,8 +180,8 @@ class GUI(Frame):
         self.stock_popup.add_command(label="Open on Sentdex", command=self.open_sentdex_webpage)
 
         self.filter_popup = Menu(self.root, tearoff=0)
-        self.filter_popup.add_command(label="NaN", command= lambda: self.filter_function(cell_is_nan, "is_nan", 0))
-        self.filter_popup.add_command(label="not Nan", command= lambda: self.filter_function(cell_is_not_nan, "not_nan", 1))
+        self.filter_popup.add_command(label="is NaN", command= lambda: self.filter_function(cell_is_nan, 0, "is_nan"))
+        self.filter_popup.add_command(label="is not NaN", command= lambda: self.filter_function(cell_is_not_nan, 1, "not_nan"))
         self.filter_popup.add_separator()
 
         self.filter_popup.add_command(label="Text contains", command= lambda: self.filter_function(cell_contains, 3, "str"))
@@ -183,20 +198,58 @@ class GUI(Frame):
         self.filter_popup.add_command(label="Number not equal to", command= lambda: self.filter_function(cell_num_not_equals, 13, "num"))
 
 
-    def mouse_click(self, event):
-        """
+    """ Treeview related """
+    def initialize_stocklist(self) -> None:
+        print("{} Initialize stocklist to {} stocks.".format(GUI_MESSAGE_HEADER, self.num_stocks))
+        self.data_interface.set_working_stocklist(self.num_stocks)
+        self.clear_tree()
+        self.fill_tree()
 
-        Description
-        -----------
+    def fill_tree(self) -> None:
+        for i, stock in enumerate(self.data_interface.get_working_stocklist().iterrows()):
+            self.insert_data(i, stock)
 
-        Parameters
-        ----------
 
-        Returns
-        -------
+    def insert_data(self, id, stock) -> None:
+        self.treeview.insert("", "end", iid=id, values=tuple(stock[1]))
 
-        """
 
+    def clear_tree(self) -> None:
+        # Clear current tree
+        for row in self.treeview.get_children():
+            self.treeview.delete(row)
+
+
+    def update_stocklist(self, callback=False) -> None:
+        if callback:
+            new_value = self.number_of_stocks_entry.get()
+            old_value = self.num_stocks
+
+            if new_value == old_value:
+                return
+            else:
+                self.num_stocks = new_value
+                self.data_interface.set_working_stocklist(self.num_stocks)
+
+            print("{} Limit stocklist to {}.".format(GUI_MESSAGE_HEADER, self.num_stocks))
+            self.data_interface.set_working_stocklist(self.num_stocks)
+            self.clear_tree()
+
+        self.fill_tree()
+
+
+    def check_for_new_data(self) -> None:
+        # print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
+        if self.data_interface.update_stocklist():
+            # This should not be forced, a button sould appear if this returns true
+            if self.refresh_stocklist_button["state"] == DISABLED:
+                self.refresh_stocklist_button["state"] = NORMAL
+
+        self.root.after(500, self.check_for_new_data)
+
+
+    """ Callback functions """
+    def mouse_click_callback(self, event):
         region = self.tree.identify("region", event.x, event.y)
         if region == "heading":
             column = self.tree.identify_column(event.x)
@@ -208,64 +261,7 @@ class GUI(Frame):
             self.sort_stocklist()
 
 
-    def open_yahoo_finance_webpage(self):
-        stock_symbol = self.stock_popup.selection["Symbol"]
-        webbrowser.open_new_tab(self.data_interface.get_yahoo_finance_webpage(stock_symbol))
-
-
-    def open_marketwatch_webpage(self):
-        stock_symbol = self.stock_popup.selection["Symbol"]
-        webbrowser.open_new_tab(self.data_interface.get_marketwatch_webpage(stock_symbol))
-
-
-    def open_tradefollowers_webpage(self):
-        stock_symbol = self.stock_popup.selection["Symbol"]
-        webbrowser.open_new_tab(self.data_interface.get_tradefollowers_webpage(stock_symbol))
-
-
-    def open_sentdex_webpage(self):
-        stock_symbol = self.stock_popup.selection["Symbol"]
-        webbrowser.open_new_tab(self.data_interface.get_sentdex_webpage(stock_symbol))
-
-
-    def filter_function(self, filter_func, menu_index, type="") -> None:
-        """ Filter data based on a criteria
-
-        Description
-        -----------
-        Callback function for when the user right clicks a column heading. Depending on what option was clicked either
-        prompt the used for the criteria to filter and the apply the filter or directly apply it.
-
-        Parameters
-        ----------
-        filter_func : str
-            A string indicating what logical operation to perform
-        type : str
-            A string indicating if it is a number or a string that should be filtered
-
-        """
-        if type == "num":
-            value = simpledialog.askfloat("num", "Enter value:", parent=self.root)
-            if isinstance(value, int) or isinstance(value, float):
-                label = [self.filter_popup.entrycget(menu_index, "label").split(":")[0], str(value)]
-                label = ": ".join(label)
-                self.filter_popup.entryconfigure(menu_index, label=label)
-                self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, value)
-        elif type == "str":
-            string = simpledialog.askstring("num", "Enter string:", parent=self.root).rstrip()
-            if string:
-                label = [self.filter_popup.entrycget(menu_index, "label").split(":")[0], string]
-                label = ": ".join(label)
-                self.filter_popup.entryconfigure(menu_index, label=label)
-                self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func, string)
-        else:
-            self.data_interface.filter_working_stocklist(self.heading_to_filter["text"], filter_func)
-
-        self.clear_tree()
-        self.update_stocklist()
-
-
-    def right_click_tree(self, event) -> None:
+    def right_click_callback(self, event) -> None:
         """ Handle right click on treeview
 
         Description
@@ -291,92 +287,100 @@ class GUI(Frame):
 
 
     def enter_key_callback(self, event):
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         focused_widget = self.root.focus_get()
         if focused_widget is self.number_of_stocks_entry:
             self.update_stocklist(callback=True)
 
 
+    """ Refresh button functions """
     def refresh_stocklist_button_callback(self):
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         self.data_interface.set_working_stocklist(self.num_stocks)
         self.sort_stocklist()
         self.refresh_stocklist_button["state"] = DISABLED
 
 
-    def get_sort_direction(self):
-        """
+    """ Right click functions """
+    def open_yahoo_finance_webpage(self):
+        stock_symbol = self.stock_popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_yahoo_finance_webpage(stock_symbol))
+
+
+    def open_marketwatch_webpage(self):
+        stock_symbol = self.stock_popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_marketwatch_webpage(stock_symbol))
+
+
+    def open_tradefollowers_webpage(self):
+        stock_symbol = self.stock_popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_tradefollowers_webpage(stock_symbol))
+
+
+    def open_sentdex_webpage(self):
+        stock_symbol = self.stock_popup.selection["Symbol"]
+        webbrowser.open_new_tab(self.data_interface.get_sentdex_webpage(stock_symbol))
+
+
+    """ Filter functions """
+    def filter_function(self, filter_func, menu_index, type="") -> None:
+        """ Filter data based on a criteria
 
         Description
         -----------
+        Callback function for when the user right clicks a column heading. Depending on what option was clicked either
+        prompt the used for the criteria to filter and the apply the filter or directly apply it.
 
         Parameters
         ----------
-
-        Returns
-        -------
+        filter_func : str
+            A string indicating what logical operation to perform
+        type : str
+            A string indicating if it is a number or a string that should be filtered
 
         """
+        column = self.heading_to_filter["text"]
+        operation = self.filter_popup.entrycget(menu_index, "label").split(" ")
+        operation = " ".join(operation[1::]) if len(operation) > 1 else operation[0]
+        label = ": ".join([column, operation])
 
+        if type == "num":
+            value = simpledialog.askfloat("num", "Enter value:", parent=self.root)
+            if isinstance(value, int) or isinstance(value, float):
+                label += " {}".format(value)
+                # self.filter_popup.entryconfigure(menu_index, label=label)
+                self.data_interface.filter_working_stocklist(column, filter_func, label, value)
+        elif type == "str":
+            string = simpledialog.askstring("num", "Enter string:", parent=self.root).rstrip()
+            if string:
+                label += string
+                # self.filter_popup.entryconfigure(menu_index, label=label)
+                self.data_interface.filter_working_stocklist(column, filter_func, label, string)
+        else:
+            self.data_interface.filter_working_stocklist(column, filter_func, label)
+
+        self.update_active_filter_list()
+        self.clear_tree()
+        self.update_stocklist()
+
+
+    def update_active_filter_list(self) -> None:
+        active_filters = self.data_interface.get_active_filters()
+        self.active_filters_menu["menu"].delete(0, "end")
+        for filter in active_filters:
+            self.active_filters_menu["menu"].add_command(label=filter, command=tkinter._setit(self.selected_filter, filter))
+
+
+    """ Sort functions """
+    def get_sort_direction(self):
         return "Ascending" if self.sort_direction else "Descending"
 
 
     def switch_sort_direction(self):
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
 
         self.sort_direction = not self.sort_direction
         self.sorting_direction_button.configure(text="Direction: {}".format(self.get_sort_direction()))
 
 
     def change_sort_direction(self, mouse_click=False):
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         self.switch_sort_direction()
 
         if not mouse_click:
@@ -384,19 +388,6 @@ class GUI(Frame):
 
 
     def set_sort_variable(self, selection, mouse_click=False) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         if selection != self.sort_variable_string:
             self.sort_variable_string = selection
 
@@ -404,150 +395,9 @@ class GUI(Frame):
                 self.sort_var.set(selection)
 
 
-    def initialize_stocklist(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
-        print("{} Initialize stocklist to {} stocks.".format(GUI_MESSAGE_HEADER, self.num_stocks))
-        self.data_interface.set_working_stocklist(self.num_stocks)
-        self.clear_tree()
-        self.fill_tree()
-
-
-    def update_stocklist(self, callback=False) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
-        if callback:
-            new_value = self.number_of_stocks_entry.get()
-            old_value = self.num_stocks
-
-            if new_value == old_value:
-                return
-            else:
-                self.num_stocks = new_value
-                self.data_interface.set_working_stocklist(self.num_stocks)
-
-            print("{} Limit stocklist to {}.".format(GUI_MESSAGE_HEADER, self.num_stocks))
-            self.data_interface.set_working_stocklist(self.num_stocks)
-            self.clear_tree()
-
-        self.fill_tree()
-
-
-    def fill_tree(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
-        for i, stock in enumerate(self.data_interface.get_working_stocklist().iterrows()):
-            self.insert_data(i, stock)
-
-
     def sort_stocklist(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         if self.data_interface.sort_working_stocklist(self.sort_variable_string, self.sort_direction):
             self.clear_tree()
 
             # Draw new sorted stocklist
             self.update_stocklist()
-
-
-    def insert_data(self, id, stock) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
-        self.treeview.insert("", "end", iid=id, values=tuple(stock[1]))
-
-
-    def clear_tree(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
-        # Clear current tree
-        for row in self.treeview.get_children():
-            self.treeview.delete(row)
-
-
-    def check_for_new_data(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
-        # print("{} Checking for new data to load...".format(GUI_MESSAGE_HEADER))
-        if self.data_interface.update_stocklist():
-            # This should not be forced, a button sould appear if this returns true
-            if self.refresh_stocklist_button["state"] == DISABLED:
-                self.refresh_stocklist_button["state"] = NORMAL
-
-        self.root.after(500, self.check_for_new_data)

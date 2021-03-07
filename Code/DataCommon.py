@@ -179,54 +179,54 @@ class DataCommon():
 def cell_contains(series: pd.Series, search_string, *args) -> pd.Series:
     search_string = search_string.lower()
     contains = series.str.contains(search_string, case=False)
-    return series.loc[contains]
+    return contains
 
 
 def cell_does_not_contain(series: pd.Series, search_string, *arg) -> pd.Series:
     search_string = search_string.lower()
     contains = ~series.str.contains(search_string, case=False)
-    return series.loc[contains]
+    return contains
 
 
 def cell_is_nan(series: pd.Series, *args) -> pd.Series:
     is_nan = series.isna()
-    return series.loc[is_nan]
+    return is_nan
 
 
 def cell_is_not_nan(series: pd.Series, *args) -> pd.Series:
-    is_nan = ~series.isna()
-    return series.loc[is_nan]
+    is_not_nan = ~series.isna()
+    return is_not_nan
 
 
 def cell_string_equals(series: pd.Series, search_string, *args) -> pd.Series:
     search_string = search_string.lower()
-    return series.loc[series.str.lower() == search_string]
+    return series.str.lower() == search_string
 
 
 def cell_string_not_equals(series: pd.Series, search_string, *args) -> pd.Series:
     search_string = search_string.lower()
-    return series.loc[series.str.lower() != search_string]
+    return series.str.lower() != search_string
 
 
 def cell_num_not_equals(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series.loc[series != compare_value]
+    return series != compare_value
 
 
 def cell_num_equals(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series.loc[series == compare_value]
+    return series == compare_value
 
 
 def cell_greater_than(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series.loc[series > compare_value]
+    return series > compare_value
 
 
 def cell_greater_than_or_equal(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series.loc[series >= compare_value]
+    return series >= compare_value
 
 
 def cell_less_than(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series.loc[series < compare_value]
+    return series < compare_value
 
 
 def cell_less_than_or_equal(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series.loc[series <= compare_value]
+    return series <= compare_value

@@ -15,7 +15,7 @@ class DataInterface(DataCommon):
         self.working_stocklist = pd.DataFrame()
         self.filtered_working_stocklist = pd.DataFrame()
         self.using_filtered_stocklist = False
-        self.active_filters = {}
+        self.active_filters = []
         self.waiting_for_new_data = False
         self.num_stocks_requested_to_update = 0
         self.next_stock_to_request = 0
@@ -182,19 +182,20 @@ class DataInterface(DataCommon):
         """
 
         list_was_sorted = False
-        if sort_variable in self.working_stocklist.columns:
+        if sort_variable in self.working_stocklist.columns and not self.using_filtered_stocklist:
             print("{} Sorting stocklist based on '{}'.".format(DATA_INTERFACE_MESSAGE_HEADER, sort_variable))
-            if self.using_filtered_stocklist and sort_variable in self.filtered_working_stocklist.columns:
-                self.filtered_working_stocklist = self.filtered_working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
-            else:
-                self.working_stocklist = self.working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
+            self.working_stocklist = self.working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
+            list_was_sorted = True
+        elif sort_variable in self.filtered_working_stocklist.columns and self.using_filtered_stocklist:
+            print("{} Sorting filtered stocklist based on '{}'.".format(DATA_INTERFACE_MESSAGE_HEADER, sort_variable))
+            self.filtered_working_stocklist = self.filtered_working_stocklist.sort_values(by=[sort_variable], ascending=sort_direction)
             list_was_sorted = True
 
 
         return list_was_sorted
 
 
-    def filter_working_stocklist(self, column: str, filter_func, value=None) -> None:
+    def filter_working_stocklist(self, column: str, filter_func, label: str, value=None) -> None:
         """ Filter the currently viewed stocklist
 
         Description
@@ -212,14 +213,46 @@ class DataInterface(DataCommon):
 
         """
 
-        self.using_filtered_stocklist = True
-        if self.filtered_working_stocklist.empty or column in self.active_filters.keys():
-            self.filtered_working_stocklist = self.working_stocklist.copy()
-
         print("Filter {} using: x {} {}".format(column, filter_func, value))
-        self.active_filters[column] = {"func": filter_func, "val": value}
-        print(self.active_filters)
-        self.filtered_working_stocklist[column] = filter_func(self.filtered_working_stocklist[column], value)
-        self.filtered_working_stocklist = self.filtered_working_stocklist.dropna(subset=[column])
+        self.using_filtered_stocklist = True
+        self.filtered_working_stocklist = self.working_stocklist.copy()
+        new_filter = {"column": column, "func": filter_func, "label": label, "val": value}
+        self.update_active_filters(new_filter)
+        self.perform_filtering()
 
 
+    def perform_filtering(self) -> None:
+        for filter in self.active_filters:
+            column = filter["column"]
+            filter_func = filter["func"]
+            value = filter["val"]
+            rows_to_keep = filter_func(self.filtered_working_stocklist[column], value)
+            self.filtered_working_stocklist = self.filtered_working_stocklist[rows_to_keep]
+
+
+    def update_active_filters(self, new_filter) -> None:
+        filter_exists = False
+        for i, filter in enumerate(self.active_filters):
+            if (filter["column"] == new_filter["column"] and
+                filter["func"] == new_filter["func"]):
+                self.active_filters[i]["label"] = new_filter["label"]
+                self.active_filters[i]["val"] = new_filter["val"]
+                filter_exists = True
+                break
+
+        if not filter_exists:
+            self.active_filters.append(new_filter)
+
+
+    def get_active_filters(self) -> list:
+        """ Return a list of the active filters
+
+        Description
+        -----------
+        Returns a list of all active filters as strings in the order that they are executed.
+        """
+
+        if len(self.active_filters) == 0:
+            return "No active filters"
+        else:
+            return [x["label"] for x in self.active_filters]
