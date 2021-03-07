@@ -4,10 +4,11 @@
 ✔ Find out why some of the stocknames are numbers @done(21-02-28 12:44) - Use marketwatch as a backup
 ✔ Implement right click funtionality in the table @done(21-02-28 16:43)
 ☐ Make the application more generic so that e.g. crypto or other stuff can be added
-☐ Fill in function documentation for DataInterface
+✔ Fill in function documentation for DataInterface @done(21-03-07 13:51)
 ☐ Fill in function documentation for GUI
 ☐ Fill in function documentation for DataCommon
 ☐ Finalize the flowchart
 ✔ It should be possible to go to the webpages by rightclicking a row in the table @done(21-02-28 16:43)
 ☐ Implement possibility to filter on columns
 ☐ Find out why "sector_y" and "sector_x" appears again
+☐ Find all places in the code that has "dataframe = dataframe" without a ".copy()"

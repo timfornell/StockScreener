@@ -25,35 +25,29 @@ class DataInterface(DataCommon):
 
 
     def initialize_stocklist(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
+        """ Initialize the stocklist and the working_stocklist variables
 
         """
 
         with self.lock:
             self.stocklist = self.read_data()
-            self.working_stocklist = self.stocklist.head()
+            self.working_stocklist = self.stocklist.head().copy()
 
 
     def update_stocklist(self) -> bool:
-        """
+        """ Interface to either get or request new data
 
         Description
         -----------
-
-        Parameters
-        ----------
+        This function has two purposes:
+            - Fill the queue with stocks that has missing values so that the DataGatherer can update them
+            - Update the internal variables 'stocklist' and 'working_stocklist' if the DataGatherer has signaled that
+              new data is available.
 
         Returns
         -------
+        bool
+            A boolean telling the GUI instance if it should update the treeview. Is 'True' if new data has been read.
 
         """
 
@@ -83,16 +77,12 @@ class DataInterface(DataCommon):
 
 
     def fill_queue_with_stocks_to_update(self) -> None:
-        """
+        """ Put stocks that should be updated in the queue
 
         Description
         -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
+        Loop through the stocklist to find stocks thas has missing data and put up to ENOUGH_STOCKS_UPDATED_TO_SIGNAL
+        stocks in the queue for the DataGatherer to update.
 
         """
 
@@ -100,7 +90,8 @@ class DataInterface(DataCommon):
         for i, stock in enumerate(self.stocklist[self.next_stock_to_request::].iterrows()):
             null_values = stock[1].isnull()
 
-            if self.num_stocks_requested_to_update % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0 and self.num_stocks_requested_to_update > 0:
+            if (self.num_stocks_requested_to_update % ENOUGH_STOCKS_UPDATED_TO_SIGNAL == 0 and
+                self.num_stocks_requested_to_update > 0):
                 self.next_stock_to_request = i
                 self.num_stocks_requested_to_update = 0
                 break
@@ -119,33 +110,21 @@ class DataInterface(DataCommon):
 
 
     def get_stocklist(self) -> pd.DataFrame:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         return self.stocklist
 
 
     def get_working_stocklist(self) -> pd.DataFrame:
-        """
+        """ Get the stocklist currently viewed in the treeview of the GUI
 
         Description
         -----------
-
-        Parameters
-        ----------
+        Either return the working_stocklist or the filtered_working_stocklist depending on if any filters are active or
+        not.
 
         Returns
         -------
+        pandas.DataFrame
+            A dataframe containing all stocks currently being displayed in the treeview.
 
         """
         if not self.using_filtered_stocklist:
@@ -155,40 +134,50 @@ class DataInterface(DataCommon):
 
 
     def set_working_stocklist(self, num_stocks: str) -> None:
-        """
+        """ Change the stocks in the working_stocklist
 
         Description
         -----------
+        Change what the working_stocklist contains, can either be the same as the original stocklist or a subset of it
+        specified by the input.
 
         Parameters
         ----------
-
-        Returns
-        -------
+        num_stocks : str
+            A string that is inputted by the user indicating how many stocks to view.
 
         """
 
         if num_stocks.lower() == "all":
-            self.working_stocklist = self.stocklist
+            self.working_stocklist = self.stocklist.copy()
         else:
             try:
                 num_stocks = int(num_stocks)
-                self.working_stocklist = self.stocklist.head(num_stocks)
+                self.working_stocklist = self.stocklist.head(num_stocks).copy()
             except Exception as e:
-                print("{} Could not convert {} to an integer. Got {} instead. Will not update stocklist.".format(DATA_INTERFACE_MESSAGE_HEADER, num_stocks, e))
+                print("{} Could not convert {} to an integer. Got {} instead. \
+                       Will not update stocklist.".format(DATA_INTERFACE_MESSAGE_HEADER, num_stocks, e))
 
 
     def sort_working_stocklist(self, sort_variable: str, sort_direction: bool) -> bool:
-        """
+        """ Sort the currently viewed stocklist
 
         Description
         -----------
+        Sort either the working_stocklist or the filtered_working_stocklist based on a sort_variable and a sort_direction.
+        The filtered_working_stocklist is sorted if any filters are activated.
 
         Parameters
         ----------
+        sort_variable : str
+            Column name to sort on, must exist in the working_stocklist
+        sort_direction : bool
+            Indicating which direction to sort in, True = Ascending.
 
         Returns
         -------
+        bool
+            If the list was sorted successfully True is returned
 
         """
 
@@ -205,7 +194,24 @@ class DataInterface(DataCommon):
         return list_was_sorted
 
 
-    def filter_working_stocklist(self, column: str, filter_func, value=None) -> None:
+    def filter_working_stocklist(self, column: str, filter_func: function, value=None) -> None:
+        """ Filter the currently viewed stocklist
+
+        Description
+        -----------
+        Filter the stocklist currently viewed in the GUI based on a condition.
+
+        Parameters
+        ----------
+        column : str
+            String indicating which column the filter should be applied to
+        filter_func : function
+            The function that performs the filtering
+        value
+            Optional argument, can either be a number or string depending on the condition
+
+        """
+
         self.using_filtered_stocklist = True
         if self.filtered_working_stocklist.empty or column in self.active_filters.keys():
             self.filtered_working_stocklist = self.working_stocklist.copy()
