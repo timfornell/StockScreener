@@ -194,7 +194,7 @@ class DataInterface(DataCommon):
         return list_was_sorted
 
 
-    def filter_working_stocklist(self, column: str, filter_func: function, value=None) -> None:
+    def filter_working_stocklist(self, column: str, filter_func, value=None) -> None:
         """ Filter the currently viewed stocklist
 
         Description

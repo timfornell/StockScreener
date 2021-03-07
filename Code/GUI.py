@@ -113,7 +113,7 @@ class GUI(Frame):
         self.number_of_stocks_label.pack(side=TOP)
         self.number_of_stocks_entry = Entry(self.num_stocks_frame)
         self.number_of_stocks_entry.pack(side=LEFT)
-        self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply", command=self.update_stocklist)
+        self.submit_number_of_stocks = Button(self.num_stocks_frame, text="Apply", command=lambda: self.update_stocklist(callback=True))
         self.submit_number_of_stocks.pack(side=LEFT)
 
         # Refresh button
