@@ -348,19 +348,18 @@ class GUI(Frame):
         column = self.heading_to_filter["text"]
         operation = self.filter_popup.entrycget(menu_index, "label").split(" ")
         operation = " ".join(operation[1::]) if len(operation) > 1 else operation[0]
-        label = ": ".join([column, operation])
+        label = " ".join([column, operation])
 
         if type == "num":
             value = simpledialog.askfloat("num", "Enter value:", parent=self.root)
             if isinstance(value, int) or isinstance(value, float):
                 label += " {}".format(value)
-                # self.filter_popup.entryconfigure(menu_index, label=label)
                 self.data_interface.filter_working_stocklist(column, filter_func, label, value)
         elif type == "str":
-            string = simpledialog.askstring("num", "Enter string:", parent=self.root).rstrip()
+            string = simpledialog.askstring("num", "Enter string:", parent=self.root)
             if string:
-                label += string
-                # self.filter_popup.entryconfigure(menu_index, label=label)
+                string = string.rstrip()
+                label += " " + string
                 self.data_interface.filter_working_stocklist(column, filter_func, label, string)
         else:
             self.data_interface.filter_working_stocklist(column, filter_func, label)

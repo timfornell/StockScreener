@@ -179,12 +179,14 @@ class DataCommon():
 def cell_contains(series: pd.Series, search_string, *args) -> pd.Series:
     search_string = search_string.lower()
     contains = series.str.contains(search_string, case=False)
+    contains = contains.fillna(False)
     return contains
 
 
 def cell_does_not_contain(series: pd.Series, search_string, *arg) -> pd.Series:
     search_string = search_string.lower()
     contains = ~series.str.contains(search_string, case=False)
+    contains = contains.fillna(False)
     return contains
 
 
@@ -200,33 +202,50 @@ def cell_is_not_nan(series: pd.Series, *args) -> pd.Series:
 
 def cell_string_equals(series: pd.Series, search_string, *args) -> pd.Series:
     search_string = search_string.lower()
-    return series.str.lower() == search_string
+    contains = series.str.lower() == search_string
+    contains = contains.fillna(False)
+    return contains
 
 
 def cell_string_not_equals(series: pd.Series, search_string, *args) -> pd.Series:
     search_string = search_string.lower()
-    return series.str.lower() != search_string
+    does_not_contain = series.str.lower() != search_string
+    does_not_contain = does_not_contain.fillna(False)
+    return does_not_contain
 
 
 def cell_num_not_equals(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series != compare_value
+    does_not_contain = series != compare_value
+    does_not_contain = does_not_contain.fillna(False)
+    return does_not_contain
 
 
 def cell_num_equals(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series == compare_value
+    contains = series == compare_value
+    contains = contains.fillna(False)
+    return contains
 
 
 def cell_greater_than(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series > compare_value
+    ge_values = series > compare_value
+    ge_values = ge_values.fillna(False)
+    return ge_values
 
 
 def cell_greater_than_or_equal(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series >= compare_value
+    geq_values = series >= compare_value
+    geq_values = geq_values.fillna(False)
+    return geq_values
 
 
 def cell_less_than(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series < compare_value
+    le_values = series < compare_value
+    le_values = le_values.fillna(False)
+    return le_values
 
 
 def cell_less_than_or_equal(series: pd.Series, compare_value, *args) -> pd.Series:
-    return series <= compare_value
+    leq_values = series <= compare_value
+    leq_values = leq_values.fillna(False)
+    return leq_values
+
