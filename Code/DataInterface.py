@@ -98,13 +98,12 @@ class DataInterface(DataCommon):
                 break
             elif null_values.values.any() and stock[1]["Symbol"] and not stock[1]["Updated"]:
                 null_columns = [col for col, is_null in null_values.iteritems() if is_null]
-                message = "UPDATE {}".format(stock[1]["Symbol"])
+                message = "UPDATE > ['{}', {}]".format(stock[1]["Symbol"], str(null_columns))
 
                 # The number of stocks isn't necesarily evenly dividable by ENOUGH_STOCKS_UPDATED_TO_SIGNAL
                 if i == len(self.stocklist.index) - 1:
                     message = message.replace("UPDATE", "FINAL_UPDATE")
 
-                message += ">{}".format(";".join(null_columns))
                 print("{} Putting '{}' in queue.".format(DATA_INTERFACE_MESSAGE_HEADER, message))
                 self.queue[DATA_GATHERER_MESSAGE_HEADER].put(message)
                 self.num_stocks_requested_to_update += 1

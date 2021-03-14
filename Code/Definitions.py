@@ -9,8 +9,6 @@ DATA_GATHERER_MESSAGE_HEADER = "@DG:"
 DATA_COMMON_MESSAGE_HEADER = "@DC:"
 GUI_MESSAGE_HEADER = "@GUI:"
 
-STOCK_SYMBOL_POSITION = 1
-
 # Stocklist definitions
 stocklist_enum = Enum("Stocklists",
                  "Movers " +

@@ -7,7 +7,7 @@ import requests
 import yahoo_fin.stock_info as ya
 import multiprocessing as mp
 import math
-import time
+import ast
 
 from alpha_vantage.sectorperformance import SectorPerformances
 from alpha_vantage.techindicators import TechIndicators
@@ -132,7 +132,7 @@ class DataGatherer(DataCommon):
         return stock_df
 
 
-    def update_stocks_with_missing_data(self) -> None:
+    def check_message_queue(self) -> None:
         """ Update stocks that have missing data
 
         Description
@@ -143,17 +143,24 @@ class DataGatherer(DataCommon):
         and columns with missing data it will try to gather this data. The columns with missing data is parsed to
         determine which data to try and gather, if the data isn't found the stock will still be marked as 'updated' to
         indicate that it has been looked at.
+
+        The message in the queue should be at string in the format:
+        - "COMMAND > [Comma separated list with information specific to the command]"
+
+        The following commands can be handled by this function:
+        - UDPATE > "['{Stock symbol}', {[Column names with null or nan values stored as strings]}]"
         """
 
         try:
             # Check if there is a message available in the queue
-            message = self.queue[DATA_GATHERER_MESSAGE_HEADER].get_nowait().split(">")
-            command = message[0].split()
-            columns_with_missing_data = message[-1].split(";")
+            message = [element.strip() for element in self.queue[DATA_GATHERER_MESSAGE_HEADER].get_nowait().split(">")]
+            command = message[0]
+            command_data = ast.literal_eval(message[1])
 
-            if "UPDATE" in command[0]:
+            if  command == "UPDATE":
                 self.updated_stocks += 1
-                stock_symbol = command[STOCK_SYMBOL_POSITION]
+                stock_symbol = command_data[0]
+                columns_with_missing_data = command_data[1]
                 # The stockname isn't always available so it's better to get it here
                 stock_name = self.get_stock_name(stock_symbol)
                 # Initialize stock_data
@@ -375,7 +382,7 @@ class DataGatherer(DataCommon):
         Description
         -----------
         This function gathers 1 and 7 day momentum score for a given ticker symbol. It is intended to be used in
-        update_stocks_with_missing_data when the GUI has requested some information to be gathered for a stock.
+        check_message_queue when the GUI has requested some information to be gathered for a stock.
 
         Parameters
         ----------

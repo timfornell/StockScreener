@@ -24,7 +24,7 @@ def run_data_gatherer(event: mp.Event, lock: mp.Lock, queue: mp.Queue):
     print("{} Event set! Will start gathering missing data...".format(DATA_GATHERER_MESSAGE_HEADER))
 
     while True:
-        data_gatherer.update_stocks_with_missing_data()
+        data_gatherer.check_message_queue()
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 Improvements:
     ☐ Replace all "try-except" with "raise customerror" and have a "try-except" at the top level instead
     ✔ merge_stocklists should either check if all enum values are in the dict or loop through the dict's keys @done(21-02-28 13:58)
-    ☐ update_stocks_with_missing_data should be renamed to something more fitting and modified so that it can handle any commands the DataInterface might send. Itself should not try to read the queue, it should take a command and message as input.
+    ✔ update_stocks_with_missing_data should be renamed to something more fitting and modified so that it can handle any commands the DataInterface might send. Itself should not try to read the queue, it should take a command and message as input. @done(21-03-14 16:58)
     ☐ Make the application more generic so that e.g. crypto or other stuff can be added
-    ☐ Find all places in the code that has "dataframe = dataframe" without a ".copy()"
+    ✔ Find all places in the code that has "dataframe = dataframe" without a ".copy()" @done(21-03-14 16:31)
 
 Bugs:
     ✔ Find out why some of the stocknames are numbers @done(21-02-28 12:44) - Use marketwatch as a backup
