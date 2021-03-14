@@ -15,8 +15,8 @@ New functionality:
     ✔ Implement possibility to filter on columns @done(21-03-11 20:43)
 
 Documentation:
-    ☐ Finish the README.md
     ✔ Fill in function documentation for DataInterface @done(21-03-07 13:51)
+    ☐ Finish the README.md
     ☐ Fill in function documentation for GUI
     ☐ Fill in function documentation for DataCommon
     ☐ Finalize the flowchart

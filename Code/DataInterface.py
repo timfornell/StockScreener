@@ -5,6 +5,7 @@ import time
 
 from pathlib import Path
 from DataCommon import DataCommon
+from typing import Tuple
 
 from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_UPDATED_TO_SIGNAL, stocklist_enum
 
@@ -263,3 +264,19 @@ class DataInterface(DataCommon):
             if filter["label"] == filter_label:
                 del self.active_filters[i]
                 break
+
+
+    def replace_filter_at_index(self, filter: dict, index: int) -> None:
+        self.active_filters[index] = filter
+
+
+    def get_filter(self, filter_label: str) -> Tuple[int, dict]:
+        if self.active_filters:
+            for i, filter in enumerate(self.active_filters):
+                if filter["label"] == filter_label:
+                    return i, self.active_filters[i]
+
+        else:
+            return -1, None
+
+

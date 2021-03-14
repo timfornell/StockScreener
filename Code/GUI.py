@@ -72,19 +72,6 @@ class GUI(Frame):
 
 
     def initialize_user_interface(self) -> None:
-        """
-
-        Description
-        -----------
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-
         # Configure the root object
         self.root.title("Stock Screener")
         self.root.grid_rowconfigure(0, weight=1)
@@ -129,8 +116,8 @@ class GUI(Frame):
         # Filter options
         self.filter_frame_label = Label(self.filter_frame, text="Active filters (evaluated top-down):")
         self.filter_frame_label.pack(side=TOP)
-        self.selected_filter = StringVar(self.filter_frame, value="")
-        self.active_filters_menu = OptionMenu(self.filter_frame, self.selected_filter, self.data_interface.get_active_filters())
+        self.selected_filter = StringVar(self.filter_frame, value=self.data_interface.get_active_filters()[0])
+        self.active_filters_menu = OptionMenu(self.filter_frame, self.selected_filter, self.data_interface.get_active_filters()[0])
         self.active_filters_menu.pack(side=LEFT)
         self.remove_filter_button = Button(self.filter_frame, text="Remove filter", command=self.remove_filter_callback)
         self.remove_filter_button.pack(side=LEFT)
@@ -299,7 +286,16 @@ class GUI(Frame):
 
 
     def edit_filter_callback(self) -> None:
-        pass
+        index, filter = self.data_interface.get_filter(self.selected_filter.get())
+        if index >= 0 and filter != None:
+            if isinstance(filter["val"], float) or isinstance(filter["val"], int):
+                filter["val"] = self.get_filter_parameters("num")["val"]
+            elif isinstance(filter["val"], str):
+                filter["val"] = self.get_filter_parameters("str")["val"]
+
+            self.data_interface.replace_filter_at_index(filter, index)
+
+            self.apply_filters()
 
 
     def remove_filter_callback(self) -> None:
@@ -350,21 +346,30 @@ class GUI(Frame):
         operation = " ".join(operation[1::]) if len(operation) > 1 else operation[0]
         label = " ".join([column, operation])
 
-        if type == "num":
-            value = simpledialog.askfloat("num", "Enter value:", parent=self.root)
-            if isinstance(value, int) or isinstance(value, float):
-                label += " {}".format(value)
-                self.data_interface.filter_working_stocklist(column, filter_func, label, value)
-        elif type == "str":
-            string = simpledialog.askstring("num", "Enter string:", parent=self.root)
-            if string:
-                string = string.rstrip()
-                label += " " + string
-                self.data_interface.filter_working_stocklist(column, filter_func, label, string)
+        if type == "str" or type == "num":
+            filter_value = self.get_filter_parameters(type)["val"]
+            if filter_value != None:
+                if isinstance(filter_value, int) or isinstance(filter_value, float):
+                    label += " {}".format(filter_value)
+                if filter_value and type(filter_value) == str:
+                    filter_value = filter_value.rstrip()
+                    label += " " + filter_value
+
+                self.data_interface.filter_working_stocklist(column, filter_func, label, filter_value)
         else:
             self.data_interface.filter_working_stocklist(column, filter_func, label)
 
         self.apply_filters()
+
+
+    def get_filter_parameters(self, type) -> dict:
+        retval = {"val": None}
+        if type == "num":
+            retval["val"] = simpledialog.askfloat("num", "Enter value:", parent=self.root)
+        elif type == "str":
+            retval["val"] = simpledialog.askstring("num", "Enter string:", parent=self.root)
+
+        return retval
 
 
     def apply_filters(self) -> None:
