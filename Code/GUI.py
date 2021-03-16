@@ -121,7 +121,7 @@ class GUI(Frame):
         self.active_filters_menu.pack(side=LEFT)
         self.remove_filter_button = Button(self.filter_frame, text="Remove filter", command=self.remove_filter_callback)
         self.remove_filter_button.pack(side=LEFT)
-        self.edit_filter_button = Button(self.filter_frame, text="Edit filter", command=self.edit_filter_callback)
+        self.edit_filter_button = Button(self.filter_frame, text="Edit filter", command=self.edit_filter_button_callback)
         self.edit_filter_button.pack(side=LEFT)
 
         # Setup treeview
@@ -285,17 +285,8 @@ class GUI(Frame):
         self.refresh_stocklist_button["state"] = DISABLED
 
 
-    def edit_filter_callback(self) -> None:
-        index, filter = self.data_interface.get_filter(self.selected_filter.get())
-        if index >= 0 and filter != None:
-            if isinstance(filter["val"], float) or isinstance(filter["val"], int):
-                filter["val"] = self.get_filter_parameters("num")["val"]
-            elif isinstance(filter["val"], str):
-                filter["val"] = self.get_filter_parameters("str")["val"]
-
-            self.data_interface.replace_filter_at_index(filter, index)
-
-            self.apply_filters()
+    def edit_filter_button_callback(self) -> None:
+        self.edit_filter()
 
 
     def remove_filter_callback(self) -> None:
@@ -349,9 +340,9 @@ class GUI(Frame):
         if type == "str" or type == "num":
             filter_value = self.get_filter_parameters(type)["val"]
             if filter_value != None:
-                if isinstance(filter_value, int) or isinstance(filter_value, float):
+                if (isinstance(filter_value, int) or isinstance(filter_value, float)) and type == "num":
                     label += " {}".format(filter_value)
-                if filter_value and type(filter_value) == str:
+                elif filter_value and isinstance(filter_value, str) and type == "str":
                     filter_value = filter_value.rstrip()
                     label += " " + filter_value
 
@@ -386,6 +377,21 @@ class GUI(Frame):
             if i == 0:
                 self.selected_filter.set(filter)
             self.active_filters_menu["menu"].add_command(label=filter, command=tkinter._setit(self.selected_filter, filter))
+
+
+    def edit_filter(self) -> None:
+        index, filter = self.data_interface.get_filter(self.selected_filter.get())
+        if index >= 0 and filter != None:
+            if isinstance(filter["val"], float) or isinstance(filter["val"], int):
+                new_value = self.get_filter_parameters("num")["val"]
+            elif isinstance(filter["val"], str):
+                new_value = self.get_filter_parameters("str")["val"]
+
+            if new_value != None:
+                filter["val"] = new_value
+                self.data_interface.replace_filter_at_index(filter, index)
+
+                self.apply_filters()
 
 
     """ Sort functions """
