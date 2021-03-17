@@ -11,9 +11,8 @@ The GUI consists of the following components:
 - Table view: Below the option bar a table with stocks is located. The top row of the table contains the column headings and every other row contains stocks.
 
 ## Program structure
-The structure of the program can
+The structure of the program can be seen in this state diagram:
 
-![GUI](Doc\OverviewFlow.svg "GUI")
 <img src="Doc\OverviewFlow.svg">
 
 ## Setup instructions
