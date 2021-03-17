@@ -4,7 +4,11 @@ https://medium.com/swlh/stock-market-screening-and-analysis-using-web-scraping-n
 https://medium.com/analytics-vidhya/sentiment-analysis-for-trading-with-reddit-text-data-73729c931d01
 https://towardsdatascience.com/sentimental-analysis-using-vader-a3415fef7664
 
-The program
+The program consists of a Graphical User Interface (GUI):
+![GUI](Doc/GUI_Image.png "GUI")
+The GUI consists of the following components:
+- Option bar: Located at the top of the window and contains various buttons to filter, sort, etc. the stocks.
+- Table view: Below the option bar a table with stocks is located. The top row of the table contains the column headings and every other row contains stocks.
 
 ## Setup instructions
 1. Create a python virtual environment, preferably called *.venv*

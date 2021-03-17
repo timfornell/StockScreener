@@ -13,6 +13,8 @@ New functionality:
     ✔ Implement right click funtionality in the table @done(21-02-28 16:43)
     ✔ It should be possible to go to the webpages by rightclicking a row in the table @done(21-02-28 16:43)
     ✔ Implement possibility to filter on columns @done(21-03-11 20:43)
+    ☐ Make it possible to plot column values for specific rows
+        ☐ Decide which library to use for plotting https://mode.com/blog/python-interactive-plot-libraries/
 
 Documentation:
     ✔ Fill in function documentation for DataInterface @done(21-03-07 13:51)
