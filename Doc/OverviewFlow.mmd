@@ -1,0 +1,56 @@
+stateDiagram-v2
+    state ForkState <<fork>>
+    state JoinState <<join>>
+
+    GUIProcess: Process for displaying\n GUI is started
+    GUIInit: GUI initializes data interface\n and components
+    GUI: GUI is opened and shows\n list of stocks
+    ReadData: Data interface reads\n relevant pickle file
+    StockHandled: The data for the stock\n has been updated
+    FindStock: Find stock with mising data
+    DataGathererProcess: Process for gathering\n data is started
+    WriteData: Data is written to\n pickle file
+    DataGatherer: DataGatherer scrapes\n webpages
+    GatherData: Stock data is gathered
+
+    [*] --> ForkState: Program is started
+    ForkState --> GUIProcess
+    ForkState --> DataGathererProcess
+    GUIProcess --> JoinState
+    DataGathererProcess --> GatherData
+    GatherData --> WriteData
+    WriteData --> JoinState
+    JoinState --> GUIInit: Data exists in file
+    GUIInit --> ReadData: GUI requests data
+    ReadData --> GUI: Data interface returns data
+    GUI --> UpdateData: Every 500ms
+    GUI --> RefreshData: User requests data\n to be updated
+    GUI --> FilterData: User creates a filter
+    GUI --> SortData: User requests data\n to be sorted
+    GUI --> [*]: User closes GUI
+    StockHandled --> GUI: Tell the GUI that new\n data is available
+    RefreshButton --> GUI: Data interface\n returns data
+    Filter --> GUI: Data interface\n returns data
+    Sort --> GUI: Data interface\n returns data
+
+    state RefreshData {
+        RefreshButton: Data interface reads\n relevant picke file
+        [*] --> RefreshButton
+    }
+
+    state SortData {
+        Sort: Data interface sorts the\n currently displayed data
+        [*] --> Sort: Send column and sort direction\n to data interface
+    }
+
+    state FilterData {
+        Filter: Data interface filters the\n currently displayed data
+        [*] --> Filter: Send filter type to\n data interface
+    }
+
+    state UpdateData {
+        [*] --> FindStock
+        FindStock --> [*]: No stock found
+        FindStock --> DataGatherer: Send stock to data\n gathering process
+        DataGatherer --> StockHandled
+    }

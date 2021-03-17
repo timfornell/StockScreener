@@ -10,6 +10,11 @@ The GUI consists of the following components:
 - Option bar: Located at the top of the window and contains various buttons to filter, sort, etc. the stocks.
 - Table view: Below the option bar a table with stocks is located. The top row of the table contains the column headings and every other row contains stocks.
 
+## Program structure
+The structure of the program can
+
+![GUI](Doc\OverviewFlow.svg "GUI")
+
 ## Setup instructions
 1. Create a python virtual environment, preferably called *.venv*
 2. Activate it with *source .venv/Scripts/activate*
