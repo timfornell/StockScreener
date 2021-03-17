@@ -14,6 +14,7 @@ The GUI consists of the following components:
 The structure of the program can
 
 ![GUI](Doc\OverviewFlow.svg "GUI")
+<img src="Doc\OverviewFlow.svg">
 
 ## Setup instructions
 1. Create a python virtual environment, preferably called *.venv*
