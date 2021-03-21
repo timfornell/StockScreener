@@ -1,11 +1,11 @@
+import multiprocessing as mp
+import pandas as pd
 import tkinter
 import webbrowser
-import pandas as pd
-import multiprocessing as mp
 
 from tkinter import *
-from tkinter import ttk
 from tkinter import simpledialog
+from tkinter import ttk
 
 from DataCommon import *
 from DataInterface import DataInterface
@@ -306,7 +306,9 @@ class GUI(Frame):
     def plot_button_callback(self) -> None:
         selected_stock = self.tree.item(self.tree.focus())
         if selected_stock["values"]:
-            print(selected_stock["values"])
+            # Selected stock is only a list and doesn't contain any column headings
+            selected_stock = {key: value for key, value in zip(self.sort_options, selected_stock["values"])}
+            stock_data = self.data_interface.get_stock_data_over_time(selected_stock)
 
 
     """ Right click functions """

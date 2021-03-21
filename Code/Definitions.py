@@ -2,7 +2,9 @@ from datetime import date
 from pathlib import Path
 from enum import Enum
 
-DATA_FOLDER = Path("Database/{}".format(date.today()))
+DATA_FOLDER = Path("Database")
+CURRENT_DATA_FOLDER = Path.joinpath(DATA_FOLDER, "{}".format(date.today()))
+TIME_SORTED_DATA = Path.joinpath(DATA_FOLDER, "StockDataOverTime")
 STOCKLIST_PICKLE_FILE = "CompleteStocklist"
 DATA_INTERFACE_MESSAGE_HEADER = "@DI:"
 DATA_GATHERER_MESSAGE_HEADER = "@DG:"

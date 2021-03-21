@@ -1,13 +1,14 @@
-from queue import Empty
-import pandas as pd
 import multiprocessing as mp
-import time
+from tkinter.constants import E
+import pandas as pd
 
-from pathlib import Path
 from DataCommon import DataCommon
+from datetime import date
+from pathlib import Path
+from queue import Empty
 from typing import Tuple
 
-from Definitions import DATA_FOLDER, DATA_GATHERER_MESSAGE_HEADER, DATA_INTERFACE_MESSAGE_HEADER, ENOUGH_STOCKS_UPDATED_TO_SIGNAL, stocklist_enum
+from Definitions import *
 
 class DataInterface(DataCommon):
     def __init__(self, lock: mp.Lock, queue: mp.Queue):
@@ -279,3 +280,38 @@ class DataInterface(DataCommon):
             return -1, None
 
 
+    def get_stock_data_over_time(self, stock: dict) -> pd.DataFrame:
+        """ For a given stock, return all collected data withing a given time period
+
+        Parameters
+        ----------
+        stock : dict
+            A dict indicating the stock that data should be found for
+
+        Returns
+        -------
+        pandas.DataFrame
+            Dataframe containing all saved data that has been gathered and saved
+
+        """
+        data = pd.DataFrame()
+        stock_path = Path.joinpath(TIME_SORTED_DATA, stock["Symbol"])
+        if Path.exists(stock_path):
+            data = pd.read_pickle(stock_path)
+        else:
+            data = pd.DataFrame(columns=stock.keys())
+            data.loc[str(date.today())] = stock.values()
+            # Go through all data and find all references to selected stock
+            for folder in Path.iterdir(DATA_FOLDER):
+                for file in folder.iterdir():
+                    if file.stem == STOCKLIST_PICKLE_FILE and folder.stem != date.today():
+                        old_data = pd.read_pickle(file)
+                        old_data = old_data.loc[old_data["Symbol"] == stock["Symbol"]]
+                        if not old_data.empty:
+                            # There should only be one entry in old_data if the symbol exists
+                            data.loc[folder.stem] = old_data.loc[old_data.index[0]]
+
+            data.sort_index(inplace=True)
+            pd.to_pickle(data, stock_path)
+
+        return data

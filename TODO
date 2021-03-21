@@ -8,6 +8,7 @@ Improvements:
 Bugs:
     ✔ Find out why some of the stocknames are numbers @done(21-02-28 12:44) - Use marketwatch as a backup
     ✘ Find out why "sector_y" and "sector_x" appears again @cancelled(21-03-11 20:44)
+    ☐ There seems to be some columns that contain "nan" as a string instead of "np.nan", unclear where this happens
 
 New functionality:
     ✔ Implement right click funtionality in the table @done(21-02-28 16:43)

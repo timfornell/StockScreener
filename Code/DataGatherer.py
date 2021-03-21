@@ -1,22 +1,22 @@
 # Import relevant packages
+import ast
+import math
 import matplotlib.pyplot as plt
+import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import pandas_datareader as web
 import requests
 import yahoo_fin.stock_info as ya
-import multiprocessing as mp
-import math
-import ast
 
 from alpha_vantage.sectorperformance import SectorPerformances
 from alpha_vantage.techindicators import TechIndicators
 from alpha_vantage.timeseries import TimeSeries
 from bs4 import BeautifulSoup
-from typing import List, Tuple
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 from queue import Empty
+from typing import List, Tuple
 
 from DataCommon import DataCommon
 from Definitions import *
@@ -68,11 +68,11 @@ class DataGatherer(DataCommon):
         """
 
         try:
-            if not DATA_FOLDER.exists():
+            if not CURRENT_DATA_FOLDER.exists():
                 with self.lock:
-                    Path.mkdir(DATA_FOLDER)
+                    Path.mkdir(CURRENT_DATA_FOLDER)
 
-            if not any(Path(DATA_FOLDER).iterdir()):
+            if not any(Path(CURRENT_DATA_FOLDER).iterdir()):
                 with self.lock:
                     stock_dict = {}
                     for stocklist in stocklist_enum:

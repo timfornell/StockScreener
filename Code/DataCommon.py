@@ -1,11 +1,11 @@
-from bs4 import BeautifulSoup
-import pandas as pd
-import numpy as np
 import multiprocessing as mp
-
-from pathlib import Path
-from pandas.core.reshape.merge import merge
+import numpy as np
+import pandas as pd
 import requests
+
+from bs4 import BeautifulSoup
+from pandas.core.reshape.merge import merge
+from pathlib import Path
 
 from Definitions import *
 
@@ -21,7 +21,7 @@ class DataCommon():
         stock_df = pd.DataFrame()
         try:
             print("{} Reading data...".format(DATA_COMMON_MESSAGE_HEADER))
-            stock_df = pd.read_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(STOCKLIST_PICKLE_FILE)))
+            stock_df = pd.read_pickle(Path.joinpath(CURRENT_DATA_FOLDER, "{}.pkl".format(STOCKLIST_PICKLE_FILE)))
             print("{} Finished reading data...".format(DATA_COMMON_MESSAGE_HEADER))
         except Exception as e:
             print("{} Failed to read data, got {}".format(DATA_COMMON_MESSAGE_HEADER, e))
@@ -32,7 +32,7 @@ class DataCommon():
     def write_data(self, stock_df: pd.DataFrame) -> None:
         try:
             print("{} Writing data...".format(DATA_COMMON_MESSAGE_HEADER))
-            stock_df.to_pickle(Path.joinpath(DATA_FOLDER, "{}.pkl".format(STOCKLIST_PICKLE_FILE)))
+            stock_df.to_pickle(Path.joinpath(CURRENT_DATA_FOLDER, "{}.pkl".format(STOCKLIST_PICKLE_FILE)))
             print("{} Finished writing data...".format(DATA_COMMON_MESSAGE_HEADER))
         except Exception as e:
             print("{} Failed to write data, got {}".format(DATA_COMMON_MESSAGE_HEADER, e))
