@@ -14,7 +14,8 @@ New functionality:
     ✔ It should be possible to go to the webpages by rightclicking a row in the table @done(21-02-28 16:43)
     ✔ Implement possibility to filter on columns @done(21-03-11 20:43)
     ☐ Make it possible to plot column values for specific rows
-        ☐ Decide which library to use for plotting https://mode.com/blog/python-interactive-plot-libraries/
+        ✔ Decide which library to use for plotting https://mode.com/blog/python-interactive-plot-libraries/ @done(21-03-20 20:27)
+        - Bokeh will be used to display plots: https://mybinder.org/v2/gh/bokeh/bokeh-notebooks/master?filepath=tutorial%2F00%20-%20Introduction%20and%20Setup.ipynb
 
 Documentation:
     ✔ Fill in function documentation for DataInterface @done(21-03-07 13:51)

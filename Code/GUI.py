@@ -63,7 +63,10 @@ class GUI(Frame):
         self.filter_frame = Frame(self.option_frames[3])
         self.filter_frame.pack(side=LEFT)
 
-        for i in range(4, NUMBER_OF_OPTION_FRAMES):
+        self.plot_frame = Frame(self.option_frames[4])
+        self.plot_frame.pack(side=LEFT)
+
+        for i in range(5, NUMBER_OF_OPTION_FRAMES):
             label = Label(self.option_frames[i], text="Empty optionframe")
             label.pack(side=LEFT)
 
@@ -123,6 +126,12 @@ class GUI(Frame):
         self.remove_filter_button.pack(side=LEFT)
         self.edit_filter_button = Button(self.filter_frame, text="Edit filter", command=self.edit_filter_button_callback)
         self.edit_filter_button.pack(side=LEFT)
+
+        # Plot options
+        self.plot_label = Label(self.plot_frame, text="Plot options")
+        self.plot_label.pack(side=TOP)
+        self.plot_button = Button(self.plot_frame, text="Plot selected stock", command=self.plot_button_callback)
+        self.plot_button.pack(side=LEFT)
 
         # Setup treeview
         self.tree = ttk.Treeview(self.tree_frame, columns=tuple(self.sort_options), selectmode='browse')
@@ -292,6 +301,12 @@ class GUI(Frame):
     def remove_filter_callback(self) -> None:
         self.data_interface.remove_filter(self.selected_filter.get())
         self.apply_filters()
+
+
+    def plot_button_callback(self) -> None:
+        selected_stock = self.tree.item(self.tree.focus())
+        if selected_stock["values"]:
+            print(selected_stock["values"])
 
 
     """ Right click functions """
