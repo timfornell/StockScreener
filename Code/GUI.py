@@ -7,6 +7,7 @@ from tkinter import *
 from tkinter import simpledialog
 from tkinter import ttk
 
+from Plotter import *
 from DataCommon import *
 from DataInterface import DataInterface
 from Definitions import GUI_MESSAGE_HEADER, NUMBER_OF_OPTION_FRAMES
@@ -309,6 +310,10 @@ class GUI(Frame):
             # Selected stock is only a list and doesn't contain any column headings
             selected_stock = {key: value for key, value in zip(self.sort_options, selected_stock["values"])}
             stock_data = self.data_interface.get_stock_data_over_time(selected_stock)
+
+            plotter = Plotter(stock_data)
+            plotter.start()
+
 
 
     """ Right click functions """
