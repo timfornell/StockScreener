@@ -295,7 +295,7 @@ class DataInterface(DataCommon):
 
         """
         data = pd.DataFrame()
-        stock_path = Path.joinpath(TIME_SORTED_DATA, stock["Symbol"])
+        stock_path = Path.joinpath(TIME_SORTED_DATA, "{}.pkl".format(stock["Symbol"]))
         if Path.exists(stock_path):
             data = pd.read_pickle(stock_path)
         else:

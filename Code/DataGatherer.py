@@ -45,7 +45,7 @@ class DataGatherer(DataCommon):
         A dataframe where stocks that have been updated are stored
     lock : multiprocessing.Lock
         A lock that is used to ensure exclusive access to the datafile
-    queue : doct{multiprocessing.Queue, multiprocessing.Queue}
+    queue : dict{multiprocessing.Queue, multiprocessing.Queue}
         A dict containgin two queue's that is used to communicate with DataInterface
 
     """
